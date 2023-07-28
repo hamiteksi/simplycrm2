@@ -1,0 +1,44 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="{% url 'musteri:customer_list' %}">Logo</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarContent"
+    aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarContent">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="{% url 'musteri:customer_list' %}">Home <span class="sr-only">(current)</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">Link</a>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="#" id="customerDropdown" role="button" data-toggle="dropdown"
+          aria-haspopup="true" aria-expanded="false">
+          Müşteri
+        </a>
+        <div class="dropdown-menu" aria-labelledby="customerDropdown">
+          <a class="dropdown-item" href="{% url 'musteri:customer_create' %}">Yeni Müşteri</a>
+          <a class="dropdown-item" href="{% url 'musteri:upload_pdf' %}">Yeni Müşteri Dosyadan</a>
+          <div class="dropdown-divider"></div>
+          <a class="dropdown-item" href="{% url 'musteri:customer_query' %}">Sorgula</a>
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{% url 'musteri:customer_expiry_list' %}">İkameti Sona Erenler</a>
+      </li>
+
+    </ul>
+    <!-- <input class="form-control mr-sm-2" type="search" name="search_term" placeholder="Ara" aria-label="Search">
+      <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Ara</button>
+    </form> -->
+    <form method="GET" class="form-inline my-2 my-lg-0">
+      <input class="form-control mr-sm-2" type="text" name="search_term" placeholder="Arama terimi girin">
+      <button class="btn btn-outline-success my-2 my-sm-0" type="submit" class="btn btn-light">Ara </button>
+      <button class="btn btn-outline-success my-2 my-sm-0" onclick="location.href='{% url 'musteri:customer_list' %}';"
+        class="btn btn-danger">Temizle</button>
+
+    </form>
+  </div>
+</nav>

@@ -1,0 +1,12 @@
+<!-- form.html -->
+<form method="post">
+    {% csrf_token %}
+    basvuruNo': '2023-90-0457565',
+    'EPosta': 'ikktiraq47@gmail.com',
+    'cepTelefon': 'null',
+    'yabanciKimlikNo': '99306940997'
+    {{ form.as_p }}
+    <img src="{% url 'musteri:captcha' %}" alt="Captcha">
+    <a href="#" onclick="location.reload();">Yeni Captcha</a>
+    <button type="submit">Submit</button>
+</form>

@@ -1,0 +1,13 @@
+<h2>Yapılacaklar Listesi</h2>
+
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">+</button>
+</form>
+
+<ul>
+    {% for yapilacak in yapilacaklar %}
+    <li>{{ yapilacak.yapilacak }} - {{ yapilacak.detay }}</li>
+    {% endfor %}
+</ul>

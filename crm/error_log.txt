@@ -1,0 +1,2 @@
+Error processing file /Users/hamiteksi/Downloads/IKAMET-2/Basvuru_Formu-Application_Form - 2023-04-25T120913.113.pdf: Pandas requires version '3.0.7' or newer of 'openpyxl' (version '2.4.11' currently installed).
+Error processing file /Users/hamiteksi/Downloads/IKAMET-2/Basvuru_Formu-Application_Form - 2023-07-23T214019.796.pdf: Pandas requires version '3.0.7' or newer of 'openpyxl' (version '2.4.11' currently installed).

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{ main_customer.first_name }} {{ main_customer.last_name }}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+
+<body>
+    <div class="container mt-4">
+        <h2>Customer Detail</h2>
+
+        <ul class="nav nav-tabs" id="customerTab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="info-tab" data-toggle="tab" href="#info" role="tab" aria-controls="info"
+                    aria-selected="true">Müşteri Bilgileri</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="files-tab" data-toggle="tab" href="#files" role="tab" aria-controls="files"
+                    aria-selected="false">Dosyalar</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="history-tab" data-toggle="tab" href="#history" role="tab"
+                    aria-controls="history" aria-selected="false">İletişim Geçmişi</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="notes-tab" data-toggle="tab" href="#notes" role="tab" aria-controls="notes"
+                    aria-selected="false">Notlar</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="previous-applications-tab" data-toggle="tab" href="#previous-applications"
+                    role="tab" aria-controls="previous-applications" aria-selected="false">Önceki Başvurular</a>
+            </li>
+
+        </ul>
+
+        <div class="tab-content" id="customerTabContent">
+            <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab">
+                <!-- Müşteri Bilgileri içeriği burada olacak -->
+                <div class="row">
+                    <div class="col-md-8"> <!-- 2/3 width -->
+                        <div class="card">
+                            <h5 class="card-header">{{ main_customer.first_name }} {{ main_customer.last_name }}</h5>
+                            <div class="card-body">
+                                <h5 class="card-title"><b>Passport Info:</b> {{ main_customer.passport_number }}</h5>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item"><b>Service Type:</b> {{ main_customer.service_type }}
+                                    </li>
+                                    <li class="list-group-item"><b>Date of Birth:</b> {{ main_customer.date_of_birth }}
+                                    </li>
+
+                                    <li class="list-group-item"><b>Phone Number:</b> {{ main_customer.phone_number }}
+                                    </li>
+                                    <li class="list-group-item"><b>Residence Permit Start Date:</b>
+                                        {{ main_customer.residence_permit_start_date }}
+                                    </li>
+                                    <li class="list-group-item"><b>Residence Permit End Date:</b>
+                                        {{ main_customer.residence_permit_end_date }}</li>
+                                    <li class="list-group-item"><b>Payment Made:</b> {{ main_customer.payment_made }}
+                                    </li>
+                                    <li class="list-group-item"><b>Application Number:</b>
+                                        {{ main_customer.application_number }}
+                                    </li>
+                                    <li class="list-group-item"><b>PTT Code:</b> {{ main_customer.ptt_code }}</li>
+                                    <button id="ptt-track-btn" class="btn btn-primary">Sorgula</button>
+
+                                    <div id="ptt-tracking-result"></div>
+
+                                    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+                                    <script>
+                                        $("#ptt-track-btn").click(function () {
+                                            $.get('ptt-track/?ptt_code={{ main_customer.ptt_code }}', function (data) {
+                                                var resultDiv = $("#ptt-tracking-result");
+                                                resultDiv.empty();
+                                                if (data.error) {
+                                                    resultDiv.append("<p>" + data.error + "</p>");
+                                                } else {
+                                                    for (var i = 0; i < data.length; i++) {
+                                                        resultDiv.append("<p>" + data[i] + "</p>");
+                                                    }
+                                                }
+                                            });
+                                        });
+                                    </script>
+                                    <button onclick="openSite()" class="btn btn-primary"
+                                        style="margin-top: 10px;">İkamet
+                                        Başvurusunu Kontrol Etmek İçin Tıklayınız</button>
+
+                                    <script>
+                                        function openSite() {
+                                            window.open('https://e-ikamet.goc.gov.tr/Ikamet/DevamEdenBasvuruGiris', '_blank', 'height=500,width=800,left=200,top=200');
+                                        }
+                                    </script>
+                                </ul>
+                            </div>
+                            <div class="card-footer">
+                                <a href="{% url 'musteri:customer_edit' main_customer.id %}"
+                                    class="btn btn-primary">Edit</a>
+                                <a href="{% url 'musteri:customer_list' %}" class="btn btn-primary">Musteri Listesine
+                                    Don </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4"> <!-- 1/3 width -->
+                        <!-- Add a section for customer notes -->
+                        <div class="card">
+                            <h5 class="card-header">Ikamet Bilgileri</h5>
+                            <div class="card-body">
+                                <h5>Basvuru No</h5>
+                                {% if main_customer.application_number %}
+
+                                <p>{{ main_customer.application_number }}</p>
+                                {% else %}
+                                <p>Basvuru numarasi mevcut degil</p>
+                                {% endif %}
+                                <h5>Mail</h5>
+                                {% if main_customer.mail %}
+                                <p>{{ main_customer.mail }}</p>
+                                {% else %}
+                                <p>Mail mevcut degil</p>
+                                {% endif %}
+                                <h5>Pasaport No</h5>
+                                {% if main_customer.passport_number %}
+                                <p>{{ main_customer.passport_number }}</p>
+                                {% else %}
+                                <p>Pasaport numarasi mevcut degil</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card mt-4">
+                            <h5 class="card-header">Customer Notes</h5>
+                            <div class="card-body">
+                                {% if main_customer.notes %}
+                                <p>{{ main_customer.notes }}</p>
+                                {% else %}
+                                <p>No notes available for this customer.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Add a section for communication history -->
+                        <div class="card mt-4">
+                            <h5 class="card-header">Communication History</h5>
+                            <div class="card-body">
+                                {% if communication_history %}
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Date</th>
+                                            <th scope="col">Communication Method</th>
+                                            <th scope="col">Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for communication in communication_history %}
+                                        <tr>
+                                            <td>{{ communication.date }}</td>
+                                            <td>{{ communication.method }}</td>
+                                            <td>{{ communication.details }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                {% else %}
+                                <p>No communication history available for this customer.</p>
+                                {% endif %}
+                                <div class="card-body">
+                                    <!-- ...kartın içeriği... -->
+
+                                    {% if main_customer.phone_number %}
+                                    <a href="https://wa.me/+90{{ main_customer.phone_number }}" class="btn btn-primary"
+                                        target="_blank">Bu Müşteriyle İletişime Geç</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab">
+                <!-- Dosyalar içeriği burada olacak -->
+                <ul class="list-group">
+                    <!-- Müşteriye ait dosyaların listesi -->
+                    <h3>Dosyalari Listele</h3>
+                    {% for file in main_customer.customerfile_set.all %}
+                    <li class="list-group-item">
+                        <a href="{{ file.uploaded_file.url }}">{{ file.uploaded_file.name }}</a>
+                        {% if file.file_description %}
+                        <p>Description: {{ file.file_description }}</p>
+                        {% endif %}
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item">No files uploaded for this customer.</li>
+                    {% endfor %}
+                </ul>
+                <hr>
+                <h3>Dosya Yükle</h3>
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary">Dosya Yükle</button>
+                </form>
+            </div>
+            <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+                <!-- İletişim Geçmişi içeriği burada olacak -->
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Date</th>
+                            <th scope="col">Communication Method</th>
+                            <th scope="col">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for communication in communication_history %}
+                        <tr>
+                            <td>{{ communication.date }}</td>
+                            <td>{{ communication.method }}</td>
+                            <td>{{ communication.details }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="tab-pane fade" id="notes" role="tabpanel" aria-labelledby="notes-tab">
+                <!-- Notlar içeriği burada olacak -->
+                {% if main_customer.notes %}
+                <p>{{ main_customer.notes }}</p>
+                {% else %}
+                <p>No notes available for this customer.</p>
+                {% endif %}
+            </div>
+            <div class="tab-pane fade" id="previous-applications" role="tabpanel"
+                aria-labelledby="previous-applications-tab">
+                <!-- Önceki Başvurular içeriği burada olacak -->
+                <ul class="list-group">
+                    <!-- Önceki başvuruların listesi -->
+                    {% for customer in same_customers %}
+                    <li class="list-group-item">
+                        <h5>{{ customer.first_name }} {{ customer.last_name }}</h5>
+                        <p>Application Number: {{ customer.application_number }}</p>
+                        <p>Service Type: {{ customer.service_type }}</p>
+                        <!-- Add more fields as needed -->
+                        <a href="{% url 'musteri:customer_detail' customer.id %}" class="btn btn-primary">Incele</a>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item">No previous applications found.</li>
+                    {% endfor %}
+                </ul>
+
+            </div>
+
+
+        </div>
+
+        <!-- Use Bootstrap's grid system to organize the boxes -->
+
+    </div>
+    <!-- Modal -->
+
+</body>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+
+</html>

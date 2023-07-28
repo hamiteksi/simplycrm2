@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Buraya içeriklerinizi yerleştirin -->
+
+<body>
+    <h2>Customers</h2>
+
+    <div id="main-content" class="container mt-4" style="margin-left: 0px;">
+        <div class="row">
+            <div class="col">
+                <!-- Change this -->
+                <button id="yapilacaklarBtn" class="btn btn-primary" style="margin-top: 10px">Yapılacaklar
+                    Listesi</button>
+
+                <div id="yapilacaklarPanel" class="col-6 mx-auto border border-light p-3" style="display: none;">
+                    <div class="input-group mb-3">
+                        <input type="text" id="yapilacakInput" class="form-control" placeholder="Yapılacak">
+                        <input type="text" id="detayInput" class="form-control" placeholder="Detay">
+                        <div class="input-group-append">
+                            <button id="addYapilacakBtn" class="btn btn-primary">+</button>
+                        </div>
+                    </div>
+                    <ul id="yapilacaklarList" class="list-group list-group-flush">
+                        {% for yapilacak in yapilacaklar %}
+                        <li id="{{ yapilacak.id }}" class="list-group-item mb-3">
+                            {{ yapilacak.olusturulma_tarihi.date }}: {{ yapilacak.yapilacak }} - {{ yapilacak.detay }}
+                            <button class="tamamlandiBtn btn btn-sm btn-success">✔️</button>
+                        </li>
+                        {% endfor %}
+                        {% for yapilacak in completed_yapilacaklar %}
+                        <li id="{{ yapilacak.id }}" class="list-group-item mb-3"
+                            style="text-decoration: line-through; color: grey;">
+                            {{ yapilacak.olusturulma_tarihi.date }}: {{ yapilacak.yapilacak }} - {{ yapilacak.detay }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+
+
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        {% load django_tables2 %}
+                        {% render_table table %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}

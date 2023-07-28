@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block content %}
+
+
+<body>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-6">
+                <form id="expenseForm">
+                    {% csrf_token %}
+                    <div id="formContainer">
+                        <div class="formset-form card mb-4 p-4">
+                            <h2>Masraf Hesapla</h2>
+                            <input type="hidden" id="dovizKuru" value="{{ doviz_kuru }}">
+
+                            <div class="form-group">
+                                <label for="insurance_age_bracket">Sigorta Yaş Aralığı:</label>
+                                <select name="insurance_age_bracket" class="insurance_age_bracket form-control">
+                                    {% for bracket in form.insurance_age_bracket.field.queryset %}
+                                    <option value="{{ bracket.id }}" data-fee-first="{{ bracket.fee_first }}"
+                                        data-fee-second="{{ bracket.fee_second }}">{{ bracket.age }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="country">Ülke:</label>
+                                <select name="country" class="country form-control">
+                                    {% for country in form.country.field.queryset %}
+                                    <option value="{{ country.id }}" data-first-year-fee="{{ country.fee_first_year }}"
+                                        data-next-year-fee="{{ country.fee_next_year }}">{{ country.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="duration">Süre:</label>
+                                <select name="duration" class="duration form-control">
+                                    {% for duration_value, duration_display in form.duration.field.choices %}
+                                    <option value="{{ duration_value }}">{{ duration_display }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="residence_card">Ikamet Kartı:</label>
+                                <input type="checkbox" name="residence_card" class="residence_card form-check-input"
+                                    checked="{{ form.residence_card.value }}" data-fee="{{ residence_card_fee }}">
+                            </div>
+
+                        </div>
+                        <button class="deleteFormButton btn btn-danger btn-block">Grup Sil</button>
+
+                    </div>
+
+
+                    <button id="addFormButton" class="btn btn-primary mb-3 btn-block">Kişi Ekle</button>
+
+
+
+                </form>
+            </div>
+            <div class="col-6">
+                <div id="formContainer">
+                    <div class="formset-form card mb-4 p-4">
+                        <div class="form-group form-check">
+                            <input type="checkbox" id="discountCheckbox" class="form-check-input">
+                            <label class="form-check-label" for="discountCheckbox">Özel İndirim Uygula</label>
+
+                        </div>
+                        <div class="form-group" id="discountPercentageGroup" style="display: none;">
+                            <label for="discountPercentage">İndirim Yüzdesi</label>
+                            <select id="discountPercentage" class="form-control">
+                                <option value="0">0%</option>
+                                <option value="0.05">5%</option>
+                                <option value="0.1">10%</option>
+                                <option value="0.15">15%</option>
+                                <option value="0.2">20%</option>
+                                <!-- Add more options as needed -->
+                            </select>
+                        </div>
+                        <h2>Toplam Masraf: <span id="totalExpenseRight">0</span></h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+<script type="text/javascript">
+
+    // JavaScript
+    $(document).ready(function () {
+        function calculateTotalExpense() {
+            var totalExpense = 0;
+            $(".formset-form").each(function () {
+                totalExpense += parseFloat($(this).attr('data-expense')) || 0;
+            });
+
+            if ($('#discountCheckbox').is(':checked')) {
+                var discountPercentage = parseFloat($('#discountPercentage').val());
+                totalExpense *= (1 - discountPercentage);
+            }
+
+            $("#totalExpenseRight").text(totalExpense.toFixed(2));
+        }
+
+        function calculateExpenses() {
+            var form = $(this).closest('.formset-form');
+            var totalExpense = 0;
+            var dovizKuru = document.getElementById('dovizKuru').value;
+
+            var insuranceFeeFirst = parseFloat(form.find('.insurance_age_bracket option:selected').attr('data-fee-first'));
+            var insuranceFeeSecond = parseFloat(form.find('.insurance_age_bracket option:selected').attr('data-fee-second'));
+            var countryFirstYearFee = parseFloat(form.find('.country option:selected').attr('data-first-year-fee')) * dovizKuru;
+            var countryNextYearFee = parseFloat(form.find('.country option:selected').attr('data-next-year-fee')) * dovizKuru;
+
+            var duration = parseInt(form.find('.duration option:selected').val());
+
+            var insuranceFee = duration === 1 ? insuranceFeeFirst : insuranceFeeSecond;
+
+            if (duration === 1) {
+                totalExpense += insuranceFee;
+                totalExpense += countryFirstYearFee;
+                totalExpense += (11 * countryNextYearFee);
+            } else if (duration === 2) {
+                totalExpense += insuranceFee;
+                totalExpense += countryFirstYearFee;
+                totalExpense += (23 * countryNextYearFee);
+            }
+
+            if (form.find('.residence_card').is(':checked')) {
+                totalExpense += parseFloat(form.find('.residence_card').data('fee'));
+            }
+
+            form.attr('data-expense', totalExpense);
+            calculateTotalExpense();
+        }
+
+        function setupEventHandlers(form) {
+            form.find('.insurance_age_bracket, .country, .duration, .residence_card').change(calculateExpenses);
+            form.find('.deleteFormButton').click(function (e) {
+                e.preventDefault();
+                $(this).closest('.formset-form').remove();
+                calculateTotalExpense();
+            });
+        }
+
+        $("#addFormButton").click(function (e) {
+            e.preventDefault();
+            var formClone = $(".formset-form:first").clone();
+            formClone.append('<button class="deleteFormButton btn btn-danger">Kişi Sil</button>');
+            $("#formContainer").append(formClone);
+            setupEventHandlers(formClone);
+            formClone.find('.insurance_age_bracket, .country, .duration, .residence_card').change();
+        });
+
+        setupEventHandlers($(".formset-form:first"));
+        $(".formset-form:first .insurance_age_bracket, .country, .duration, .residence_card").change();
+
+        $("#discountCheckbox").change(function () {
+            if ($(this).is(':checked')) {
+                $('#discountPercentageGroup').show();
+            } else {
+                $('#discountPercentageGroup').hide();
+            }
+            calculateTotalExpense();
+        });
+
+        $("#discountPercentage").change(calculateTotalExpense);
+    });
+
+
+</script>
+{% endblock %}
+
+</html>
