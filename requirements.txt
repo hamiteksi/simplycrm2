@@ -22,7 +22,6 @@ async-generator==1.10
 async-timeout==4.0.2
 asynctest==0.13.0
 attrs==21.2.0
-awscli==1.27.95
 backcall==0.2.0
 base58==2.1.0
 basicsr==1.4.2
@@ -158,6 +157,7 @@ lark==1.1.2
 lazy-object-proxy==1.6.0
 libclang==16.0.0
 linkify-it-py==1.0.3
+llvmlite==0.39.1
 lmdb==1.4.0
 loguru==0.6.0
 lpips==0.1.4
@@ -186,6 +186,7 @@ netaddr==0.8.0
 networkx==3.0
 nltk==3.8.1
 nodeenv==1.7.0
+numba==0.56.4
 numpy==1.23.3
 oauthlib==3.2.2
 omegaconf==2.2.3
@@ -264,7 +265,6 @@ pytorch-lightning==1.7.6
 pytz==2022.7.1
 pytz-deprecation-shim==0.1.0.post0
 PyWavelets==1.4.1
-PyYAML==6.0
 pyzmq==22.3.0
 readability-lxml==0.8.1
 realesrgan==0.3.0
