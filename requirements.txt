@@ -186,7 +186,6 @@ netaddr==0.8.0
 networkx==3.0
 nltk==3.8.1
 nodeenv==1.7.0
-numba==0.56.4
 numpy==1.23.3
 oauthlib==3.2.2
 omegaconf==2.2.3
