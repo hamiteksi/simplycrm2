@@ -9,6 +9,7 @@ base58==2.1.0
 beautifulsoup4==4.11.1
 bs4==0.0.1
 Django==4.1.7
+django-constance==2.9.1
 django-tables2==2.6.0
 django-tinymce==3.6.1
 ffmpy==0.3.0
