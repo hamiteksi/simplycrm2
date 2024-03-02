@@ -1,6 +1,5 @@
 beautifulsoup4==4.11.1
 Django==4.1.7
-django_tables2==2.6.0
 django_tables2==2.7.0
 openpyxl==3.0.9
 pandas==1.5.3
