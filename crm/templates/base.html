@@ -16,6 +16,7 @@
 <body>
     {% include 'navbar.html' %}
 
+
     <div class="container-fluid">
         <div class="row">
             <div class="col-3 d-flex flex-column flex-shrink-0 p-3 bg-light" style="height: 100vh;">
@@ -120,8 +121,8 @@
         }
 
         function closeNav() {
-            document.getElementById("mySidebar").style.width = "60px";
-            document.getElementById("main-content").style.marginLeft = "60px";
+            document.getElementById("mySidebar").style.width = "0";
+            document.getElementById("main-content").style.marginLeft = "0";
             document.getElementById("openbtn").style.display = "block";
         }
         $("#yapilacaklarBtn").click(function () {
