@@ -1,2 +1,2 @@
-export PATH=$PATH:/usr/local/python3/bin && pip install gunicorn && gunicorn app:app
+pip install gunicorn && gunicorn app:app
 web: gunicorn crm.wsgi:application --bind 0.0.0.0:$PORT
