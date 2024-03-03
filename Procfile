@@ -1,1 +1,2 @@
-web: gunicorn crm.wsgi --log-file -
+pip install gunicorn && gunicorn app:app
+web: gunicorn crm.wsgi:application
