@@ -1,0 +1,105 @@
+<!-- Sidebar Container -->
+<div class="sidebar-container">
+    <!-- Sidebar Toggle Button
+    <button class="btn sidebar-toggle" type="button">
+        <span class="toggle-icon">&lt;</span>
+    </button> -->
+
+    <!-- Sidebar Content -->
+    <!-- <div class="sidebar-content d-flex flex-column flex-shrink-0 p-3 bg-light" style="width: 280px;"> -->
+    <hr>
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+            <a href="{% url 'musteri:customer_list' %}" class="nav-link active" aria-current="page">
+                <svg class="bi me-2" width="16" height="16">
+                    <use xlink:href="#home"></use>
+                </svg>
+                Home
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'musteri:customer_create' %}" class="nav-link link-dark">
+                <svg class="bi me-2" width="16" height="16">
+                    <use xlink:href="#plus-circle"></use>
+                </svg>
+                Yeni Musteri
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'musteri:upload_pdf' %}" class="nav-link link-dark">
+                <svg class="bi me-2" width="16" height="16">
+                    <use xlink:href="#file-earmark-arrow-up"></use>
+                </svg>
+                Yeni Musteri - Dosyadan Yukle
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'musteri:customer_query' %}" class="nav-link link-dark">
+                <svg class="bi me-2" width="16" height="16">
+                    <use xlink:href="#search"></use>
+                </svg>
+                Sorgula
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'musteri:customer_expiry_list' %}" class="nav-link link-dark">
+                <svg class="bi me-2" width="16" height="16">
+                    <use xlink:href="#alarm-exclamation"></use>
+                </svg>
+                Ikameti Sona Erenler
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'musteri:expense' %}" class="nav-link link-dark">
+                <svg class="bi me-2" width="16" height="16">
+                    <use xlink:href="#alarm-exclamation"></use>
+                </svg>
+                Masraf Hesapla
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'musteri:yapilacak' %}" class="nav-link link-dark">
+                <svg class="bi me-2" width="16" height="16">
+                    <use xlink:href="#alarm-exclamation"></use>
+                </svg>
+                Yapilacak Listesi
+            </a>
+        </li>
+    </ul>
+    <hr>
+    <div class="dropdown">
+        <a href="#" class="d-flex align-items-center link-dark text-decoration-none dropdown-toggle" id="dropdownUser2"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
+            <strong>Hamit</strong>
+        </a>
+        <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser2">
+            <li><a class="dropdown-item" href="#">New project...</a></li>
+            <li><a class="dropdown-item" href="#">Settings</a></li>
+            <li><a class="dropdown-item" href="#">Profile</a></li>
+            <li>
+                <hr class="dropdown-divider">
+            </li>
+            <li><a class="dropdown-item" href="#">Sign out</a></li>
+        </ul>
+    </div>
+
+    <!-- </div> -->
+    <!-- Main Content -->
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('.sidebar-toggle').click(function () {
+            // Sidebar içeriğini aç/kapa
+            $('.sidebar-content').toggleClass('active');
+
+            // Buton simgesini güncelle
+            if ($('.sidebar-content').hasClass('active')) {
+                $('.toggle-icon').html('&gt;'); // Sidebar açıksa ">" simgesini göster
+            } else {
+                $('.toggle-icon').html('&lt;'); // Sidebar kapalıysa "<" simgesini göster
+            }
+        });
+    });
+</script>

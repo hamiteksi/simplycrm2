@@ -32,6 +32,24 @@ html {
 
 @import url('https://fonts.googleapis.com/css?family=Roboto:300,400,400i,500');
 
+@media (max-width: 768px) {
+    .sidebar-container {
+        display: none;
+        /* Küçük ekranlarda sidebar'ı gizle */
+    }
+
+    .navbar .nav-item .nav-link {
+        padding: 5px;
+        /* Nav link padding'ini azalt */
+    }
+
+    .table-responsive table {
+        font-size: 14px;
+        /* Tablo metin boyutunu küçült */
+    }
+}
+
+
 
 
 /* Toggle Styles */
@@ -83,6 +101,20 @@ html {
 #sidebar header a:hover {
     color: #fff;
 }
+
+
+
+.sidebar-toggle span {
+    /* This will rotate the "<" icon */
+    display: inline-block;
+    transition: transform 0.3s;
+}
+
+.sidebar-content.active+.sidebar-toggle span {
+    transform: rotate(180deg);
+    /* Flip the arrow when sidebar is expanded */
+}
+
 
 /* #sidebar .nav {
 
