@@ -23,6 +23,7 @@ from django_tables2 import RequestConfig
 from django.views.decorators.csrf import csrf_exempt
 import urllib.parse
 from openpyxl import Workbook
+from django.contrib.auth.decorators import login_required
 
 
 
@@ -380,92 +381,23 @@ def customer_query_view(request):
 
 class PTTTrackingView(View):
     def get(self, request, *args, **kwargs):
-        tracking_code = request.GET.get('ptt_code', None)
+        tracking_code = request.GET.get("ptt_code", None)
         print(tracking_code)
         if tracking_code:
-            tracking_result = ptt_track(tracking_code)  # ptt_track fonksiyonunu burada çağırıyoruz
-            tracking_result_list = tracking_result.split('\n')  # string'i '\n' karakterine göre böler
-            return JsonResponse(tracking_result_list, safe=False)  # JsonResponse'a bir liste veriyoruz
+            tracking_result = ptt_track(
+                tracking_code
+            )  # ptt_track fonksiyonunu burada çağırıyoruz
+            tracking_result_list = tracking_result.split(
+                "\n"
+            )  # string'i '\n' karakterine göre böler
+            return JsonResponse(
+                tracking_result_list, safe=False
+            )  # JsonResponse'a bir liste veriyoruz
         else:
             return JsonResponse({"error": "Invalid tracking code."})
 
-
 def home(request):
     return render(request, 'musteri/home.html')
-
-# def captcha(request):
-#     session = requests.session()
-#     url = "https://e-ikamet.goc.gov.tr/Ikamet/DevamEdenBasvuruGiris/NewCaptcha"
-#     headers = {
-#         'Accept': '*/*',
-#         'Accept-Language': 'tr-TR,tr;q=0.9',
-#         'Host': 'e-ikamet.goc.gov.tr',
-#         'Origin': 'https://e-ikamet.goc.gov.tr',
-#         'Referer': 'https://e-ikamet.goc.gov.tr/',
-#         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15',
-#         'X-Requested-With': 'XMLHttpRequest',
-#     }
-#     response = session.post(url, headers=headers)
-
-#     # Parse the HTML to find the captcha URL
-#     soup = BeautifulSoup(response.content, 'html.parser')
-#     img_tag = soup.find('img')
-#     captcha_url = img_tag.get('src') if img_tag else None
-
-#     # Base URL of the website
-#     base_url = "https://e-ikamet.goc.gov.tr"
-
-#     # If captcha URL is a relative URL, make it absolute
-#     if captcha_url and not captcha_url.startswith("http"):
-#         captcha_url = base_url + captcha_url
-
-#     # Now we make a GET request to the captcha URL and return the image
-#     response = session.get(captcha_url, headers=headers)
-
-#     # We are directly returning the image received from the response
-#     return FileResponse(BytesIO(response.content), content_type='image/gif')
-
-# # views.py
-
-# def form_view(request):
-#     if request.method == 'POST':
-#         form = BasvuruForm(request.POST)
-#         if form.is_valid():
-#             basvuru_no = form.cleaned_data['basvuru_no']
-#             email_or_phone = form.cleaned_data['email_or_phone']
-#             yabanci_kimlik_no = form.cleaned_data['yabanci_kimlik_no']
-#             captcha_input = form.cleaned_data['captcha_input']
-
-#             data = {
-#                 'basvuruNo': basvuru_no,
-#                 'EPosta': email_or_phone,
-#                 'yabanciKimlikNo': yabanci_kimlik_no,
-#                 'CaptchaInputText': captcha_input,
-#                 # diğer form alanları...
-#             }
-
-#             # HTTP headers (istek başlıkları)
-#             headers = {
-#                 'Content-Type': 'application/json',
-#                 'Accept': '*/*',
-#                 'Accept-Language': 'tr-TR,tr;q=0.9',
-#                 'Accept-Encoding': 'gzip, deflate, br',
-#                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15',
-#                 'X-Requested-With': 'XMLHttpRequest',
-#                 # ...
-#             }
-
-#             # isteği gönder
-#             response = requests.post('https://e-ikamet.goc.gov.tr/Ikamet/DevamEdenBasvuruGiris/Ara', headers=headers, json=data)
-
-#             # yanıtı işle
-#             print(response.json())
-#             return render(request, 'musteri/response.html', {'response': response.json()})
-
-#     else:
-#         form = BasvuruForm()
-
-#     return render(request, 'musteri/ikamet.html', {'form': form})
 
 class FormView:
     def __init__(self):
@@ -559,80 +491,3 @@ class FormView:
             # print('buda content:', captcha_image.streaming_content)
 
         return render(request, 'musteri/ikamet.html', {'form': form, 'captcha_image': captcha_image })
-#     def captcha(self, request):
-#         url = "https://e-ikamet.goc.gov.tr/Ikamet/DevamEdenBasvuruGiris"
-#         headers = {
-#             'Accept': '*/*',
-#             'Accept-Language': 'tr-TR,tr;q=0.9',
-#             'Host': 'e-ikamet.goc.gov.tr',
-#             'Origin': 'https://e-ikamet.goc.gov.tr',
-#             'Referer': 'https://e-ikamet.goc.gov.tr/',
-#             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15',
-#             'X-Requested-With': 'XMLHttpRequest',
-#         }
-#         response = self.session.post(url, headers=headers)
-#         print('/bu captcha session', self.session.cookies.get_dict())  # Oturum kimliğini kontrol etmek için bu satırı ekledik
-
-#         soup = BeautifulSoup(response.content, 'html.parser')
-#         print(soup)
-#         img_tag = soup.find('img', id='CaptchaImage')
-#         print(img_tag)
-#         captcha_url = img_tag.get('src') if img_tag else None
-#         print(captcha_url)
-#         base_url = "https://e-ikamet.goc.gov.tr"
-#         if captcha_url and not captcha_url.startswith("http"):
-#             captcha_url = base_url + captcha_url
-#         captcha_de_text = soup.find('input', {'name': 'CaptchaDeText'})['value']
-#         request_verification_token = soup.find('input', {'name': '__RequestVerificationToken'})['value']
-#         print(captcha_de_text, 
-# '\n', request_verification_token)
-#         response = self.session.get(captcha_url, headers=headers)
-#         self.captcha_session = self.session  # Captcha'nın oturumunu sakladık
-#         return FileResponse(BytesIO(response.content), content_type='image/gif')
-
-#     def form_view(self, request):
-#         print('/bu form session', self.session.cookies.get_dict())
-
-#         if request.method == 'POST':
-#             form = BasvuruForm(request.POST)
-#             if form.is_valid():
-#                 basvuru_no = form.cleaned_data['basvuru_no']
-#                 email_or_phone = form.cleaned_data['email_or_phone']
-#                 yabanci_kimlik_no = form.cleaned_data['yabanci_kimlik_no']
-#                 captcha_input = form.cleaned_data['captcha_input']
-#                 CaptchaDeText = ""
-
-#                 data = {
-#                     'basvuruNo': basvuru_no,
-#                     'EPosta': email_or_phone,
-#                     "cepTelefon":'null',
-#                     'yabanciKimlikNo': yabanci_kimlik_no,
-#                     'CaptchaInputText': captcha_input,
-#                     "pasaportBelgeNo":'null',
-#                     "islemTur":-1,
-#                     'CaptchaDeText':CaptchaDeText,
-#                 }
-#                 headers = {
-#                     'Content-Type': 'application/json',
-#                     'Accept': '*/*',
-#                     'Accept-Language': 'tr-TR,tr;q=0.9',
-#                     'Accept-Encoding': 'gzip, deflate, br',
-#                     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.2 Safari/605.1.15',
-#                     'X-Requested-With': 'XMLHttpRequest',
-#                     '__RequestVerificationToken': 'du-RR-lyEamt1dY7AcSaRn_D8MdbxM6iryYgRrZ0foWE3enfUVrhuK804Qv7SKzNCMXwsglLnMc0Axrx9gwJpmsLtDOrVhEwmpdN5q0F0KA1',
-
-#                 }
-#                 # Captcha'nın oturumunu formun oturumuyla aynı hale getir
-#                 self.session = self.captcha_session  # Captcha oturumunu form oturumuyla aynı hale getirdik
-#                 response = self.session.post('https://e-ikamet.goc.gov.tr/Ikamet/DevamEdenBasvuruGiris/Ara', headers=headers, json=data)
-#                 print(response.json())
-#                 print(data)
-#                 return render(request, 'musteri/response.html', {'form': form, 'response': response.json()})
-#         else:
-#             form = BasvuruForm()
-#             captcha_image = self.captcha(request)
-#             print('/bu form session', self.session.cookies.get_dict())
-
-#             print('buda content:', captcha_image.streaming_content)
-
-#         return render(request, 'musteri/ikamet.html', {'form': form, 'captcha_image': captcha_image })

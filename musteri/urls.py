@@ -21,6 +21,7 @@ urlpatterns = [
     path('yapilacak/', views.yapilacak_list_view, name='yapilacak'),
     path('add_yapilacak/', views.add_yapilacak, name='add_yapilacak'),
     path('complete_yapilacak/<int:id>/', views.complete_yapilacak, name='complete_yapilacak'),
+    
 
 
 

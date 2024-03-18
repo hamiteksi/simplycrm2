@@ -80,7 +80,12 @@
             <li>
                 <hr class="dropdown-divider">
             </li>
-            <li><a class="dropdown-item" href="#">Sign out</a></li>
+            {% if user.is_authenticated %}
+            <form action="{% url 'logout' %}" method="post" class="form-inline my-2 my-lg-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger my-2 my-sm-0">Çıkış Yap</button>
+            </form>
+            {% endif %}
         </ul>
     </div>
 

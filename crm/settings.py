@@ -54,6 +54,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'musteri.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -182,3 +183,20 @@ LOGGING = {
         'level': 'DEBUG',
     },
 }
+
+# settings.py
+LOGIN_URL = 'login'
+
+LOGIN_EXEMPT_URLS = [
+    '/login/',  # Giriş URL'si
+    # İstisna olmasını istediğiniz diğer URL'ler
+]
+
+# settings.py
+
+LOGIN_REDIRECT_URL = '/musteri/customers/'
+
+
+
+# Kullanıcı çıkış yaptıktan sonra ana sayfaya yönlendir
+LOGOUT_REDIRECT_URL = '/'
