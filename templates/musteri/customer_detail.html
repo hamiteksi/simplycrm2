@@ -1,14 +1,22 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html>
 
 <head>
+
     <title>{{ main_customer.first_name }} {{ main_customer.last_name }}</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    {% include 'head.html' %}
 
 </head>
 
 <body>
+    <div class="container-fluid">
+        {% include 'navbar.html' %}
+    </div>
+
     <div class="container mt-4">
         <h2>Customer Detail</h2>
 
@@ -64,7 +72,10 @@
                                         {{ main_customer.application_number }}
                                     </li>
                                     <li class="list-group-item"><b>PTT Code:</b> {{ main_customer.ptt_code }}</li>
+                                    {% if main_customer.ptt_code %}
                                     <button id="ptt-track-btn" class="btn btn-primary">Sorgula</button>
+                                    {% endif %}
+
 
                                     <div id="ptt-tracking-result"></div>
 
@@ -82,11 +93,27 @@
                                 </ul>
                             </div>
                             <div class="card-footer">
-                                <a href="{% url 'musteri:customer_edit' main_customer.id %}"
-                                    class="btn btn-primary">Edit</a>
-                                <a href="{% url 'musteri:customer_list' %}" class="btn btn-primary">Musteri Listesine
-                                    Don </a>
+                                <div class="row justify-content-start">
+                                    <div class="col-auto">
+                                        <a href="{% url 'musteri:customer_edit' main_customer.id %}"
+                                            class="btn btn-primary">Edit</a>
+                                    </div>
+                                    <div class="col-auto">
+                                        <a href="{% url 'musteri:customer_list' %}" class="btn btn-primary">Müşteri
+                                            Listesine Dön</a>
+                                    </div>
+                                    <div class="col-auto">
+                                        <!-- Sil Butonu -->
+                                        <form action="{% url 'musteri:customer_delete' main_customer.id %}"
+                                            method="post" id="deleteForm" class="mb-0">
+                                            {% csrf_token %}
+                                            <button type="button" class="btn btn-danger" onclick="confirmDelete()">Kaydı
+                                                Sil</button>
+                                        </form>
+                                    </div>
+                                </div>
                             </div>
+
                         </div>
                     </div>
 
@@ -114,18 +141,69 @@
                                 {% else %}
                                 <p>Pasaport numarasi mevcut degil</p>
                                 {% endif %}
-                            </div>
-                        </div>
-                        <div class="card mt-4">
-                            <h5 class="card-header">Customer Notes</h5>
-                            <div class="card-body">
-                                {% if main_customer.notes %}
-                                <p>{{ main_customer.notes }}</p>
-                                {% else %}
-                                <p>No notes available for this customer.</p>
+                                <!-- Diğer müşteri bilgileri... -->
+                                <h5>Durum </h5>
+                                {% if main_customer.status %}
+                                <p>{{ main_customer.get_status_display }}</p>
                                 {% endif %}
                             </div>
                         </div>
+                        <!-- Customer Notes Card -->
+                        <div class="card mt-4">
+                            <h5 class="card-header">Customer Notes</h5>
+                            <div class="card-body">
+                                <!-- Notları Listele -->
+                                {% for note in notes %}
+                                <div class="note-box d-flex justify-content-between">
+                                    <div>
+                                        <p class="mb-1">{{ note.text }}</p>
+                                        <small class="text-muted">{{ note.created_at }}</small>
+                                    </div>
+                                    <!-- Silme Butonu -->
+                                    <form action="{% url 'musteri:delete_note' main_customer.id note.id %}"
+                                        method="post" class="align-self-start">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm">Sil</button>
+                                    </form>
+                                </div>
+                                {% empty %}
+                                <p>No notes available for this customer.</p>
+                                {% endfor %}
+                            </div>
+                            <!-- Not Ekleme Butonu -->
+                            <div class="card-footer">
+                                <button type="button" class="btn btn-primary" data-toggle="modal"
+                                    data-target="#noteModal">Not Ekle</button>
+                            </div>
+                        </div>
+
+                        <!-- Not Ekleme Modalı -->
+                        <div class="modal fade" id="noteModal" tabindex="-1" role="dialog"
+                            aria-labelledby="noteModalLabel" aria-hidden="true">
+                            aria-labelledby="noteModalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <form action="{% url 'musteri:add_note' main_customer.id %}" method="post">
+                                    {% csrf_token %}
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="noteModalLabel">Not Ekle</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body">
+                                            {{ note_form.as_p }} <!-- 'note_form' context'ten gelmeli -->
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-primary">Kaydet</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+
+
 
                         <!-- Add a section for communication history -->
                         <div class="card mt-4">
@@ -211,14 +289,29 @@
                     </tbody>
                 </table>
             </div>
+
             <div class="tab-pane fade" id="notes" role="tabpanel" aria-labelledby="notes-tab">
                 <!-- Notlar içeriği burada olacak -->
-                {% if main_customer.notes %}
-                <p>{{ main_customer.notes }}</p>
+                {% if main_customer.notes.all %}
+                <div class="list-group">
+                    {% for note in main_customer.notes.all %}
+                    <div class="list-group-item note-box d-flex justify-content-between align-items-center">
+                        <p class="mb-0">{{ note.text }}</p>
+                        <small>{{ note.created_at }}</small>
+
+                        <!-- Silme Butonu -->
+                        <form action="{% url 'musteri:delete_note' main_customer.id note.id %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm">Sil</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
                 {% else %}
                 <p>No notes available for this customer.</p>
                 {% endif %}
             </div>
+
             <div class="tab-pane fade" id="previous-applications" role="tabpanel"
                 aria-labelledby="previous-applications-tab">
                 <!-- Önceki Başvurular içeriği burada olacak -->
@@ -270,6 +363,41 @@
         });
     });
 </script>
+
+
+<script>
+    function confirmDelete() {
+        var confirmAction = confirm("Emin misiniz? Bu işlem geri alınamaz.");
+        if (confirmAction) {
+            document.getElementById('deleteForm').submit();
+        } else {
+            console.log('Silme işlemi iptal edildi.');
+        }
+    }
+</script>
+{% include 'scripts.html' %}
+
+{% block extrajs %}{% endblock %}
+
+<style>
+    .note-box {
+        background-color: #f8f9fa;
+        border-left: 5px solid #007bff;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .note-box p {
+        margin: 0;
+    }
+
+    .note-box small {
+        display: block;
+        margin-top: 10px;
+        color: #6c757d;
+    }
+</style>
 
 
 

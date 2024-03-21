@@ -9,6 +9,9 @@ class CustomerTable(tables.Table):
     identity_number = tables.Column(empty_values=[])  # We want to handle NaN values ourselves
 
     def render_identity_number(self, value):
+        if value is None:
+        # Eğer value None ise, boş bir string veya belirtmek istediğiniz bir metni döndürün
+            return "Bilgi Yok"
         try:
             # Try to convert the value to float and then to int
             float_value = float(value)
@@ -21,7 +24,7 @@ class CustomerTable(tables.Table):
     class Meta:
         model = Customer
         template_name = 'django_tables2/bootstrap.html'
-        fields = ('first_name', 'last_name', 'application_number', 'nationality', 'passport_number', 'identity_number', 'residence_type', 'residence_permit_start_date', 'residence_permit_end_date')
+        fields = ('id', 'first_name', 'last_name', 'application_number', 'nationality', 'passport_number', 'identity_number', 'residence_type', 'residence_permit_start_date', 'residence_permit_end_date')
         empty_text = ""
 
 

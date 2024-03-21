@@ -25,10 +25,22 @@ class Customer(models.Model):
     ptt_code = models.CharField(max_length=50, null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
     payment_made = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    notes = models.TextField(null=True, blank=True)
     communication_history = models.ManyToManyField(Communication, blank=True)
     application_number = models.CharField(max_length=50, null=True, blank=True)
     mail = models.CharField(max_length=50, null=True, blank=True)
+    STATUS_CHOICES = [
+    ('basvuru_yapildi', 'Başvuru Yapıldı'),
+    ('dosyalar_verildi', 'Dosyalar Verildi'),
+    ('ptt_bekleniyor', 'PTT Bekleniyor'),
+    ('kart_alindi', 'Kart Alındı'),
+    ('tamamlandi', 'Tamamlandı'),
+    ]
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='basvuru_yapildi', verbose_name="Durum")
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
 
 def get_upload_to(instance, filename):
     return f'customer_files/customer_{instance.customer.id}/{filename}'
@@ -37,6 +49,19 @@ class CustomerFile(models.Model):
     customer = models.ForeignKey(Customer, related_name='files', on_delete=models.CASCADE)
     uploaded_file = models.FileField(upload_to=get_upload_to)
     file_description = models.CharField(max_length=255, blank=True)
+
+class Note(models.Model):
+    customer = models.ForeignKey(Customer, related_name='notes', on_delete=models.CASCADE)
+    text = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.text[:50]
+
+
 
 class Expense(models.Model):
     AGE_CHOICES = [(i, str(i)) for i in range(1, 121)]

@@ -85,6 +85,17 @@ WSGI_APPLICATION = 'crm.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'simplycrm',
+#         'USER': 'simplycrm',
+#         'PASSWORD': '11Etm1063@221',
+#         'HOST': '92.205.0.132',  # Yerel ortamda genellikle localhost kullanılır
+#         'PORT': '3306',
+#     }
+# }
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',

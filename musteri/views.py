@@ -3,8 +3,8 @@ from django.core.files.storage import FileSystemStorage
 from django.views import View
 from django.db.models import Q, DateField, F
 from django.db.models.functions import Cast
-from .models import Customer, ExpenseItem, CustomerFile, Yapilacak
-from .forms import CustomerForm, CustomerQueryForm, BasvuruForm, ExpenseForm, CalculateExpensesForm, CustomerFileForm, YapilacakForm
+from .models import Customer, ExpenseItem, CustomerFile, Yapilacak, Note
+from .forms import CustomerForm, CustomerQueryForm, BasvuruForm, ExpenseForm, CalculateExpensesForm, CustomerFileForm, YapilacakForm, NoteForm
 import tabula
 import pandas as pd
 from django.conf import settings
@@ -13,7 +13,7 @@ from django.views import View
 from .ptt_track import ptt_track  # ptt_track isimli bir Python dosyası oluşturun ve PTT takip kodunuzu oraya taşıyın.
 import requests
 from bs4 import BeautifulSoup
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse, HttpResponse, HttpResponseRedirect
 from io import BytesIO
 from datetime import date, timedelta
 from django.utils import timezone
@@ -24,6 +24,9 @@ from django.views.decorators.csrf import csrf_exempt
 import urllib.parse
 from openpyxl import Workbook
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.urls import reverse
+
 
 
 
@@ -189,10 +192,22 @@ def customer_create_view(request):
         form = CustomerForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('customer_list')  # listeleme view'ine yönlendir
+            return redirect('musteri:customer_list')  # listeleme view'ine yönlendir
     else:
         form = CustomerForm()
     return render(request, 'musteri/customer_form.html', {'form': form})
+
+def add_note_to_customer(request, pk):
+    customer = get_object_or_404(Customer, pk=pk)
+    if request.method == 'POST':
+        form = NoteForm(request.POST)
+        if form.is_valid():
+            new_note = form.save(commit=False)
+            new_note.customer = customer
+            new_note.save()
+            return redirect('musteri:customer_detail', pk=pk)  # 'musteri:customer_detail' URL ismi doğruysa
+    else:
+        return redirect('musteri:customer_detail', pk=pk)  # veya uygun bir hata mesajı gösterin
 
 def customer_list_view(request):
     search_term = request.GET.get('search_term', '')
@@ -242,6 +257,7 @@ def upload_pdf_view(request):
         return redirect('musteri:customer_list')
 
     return render(request, 'musteri/upload_pdf.html')
+
 
 def process_pdf(file_path):
     print(settings.MEDIA_ROOT)
@@ -307,6 +323,8 @@ def process_pdf(file_path):
             'telefon' : df.iloc[34, 5],
             # Daha fazla alanlar...
         }
+    # for key, value in data.items():
+    #     print(f"{key}: {value}")
     # TODO: Diğer alanları da oku ve bir sözlük oluştur
     create_customer(data)
 
@@ -343,25 +361,56 @@ def customer_detail_view(request, pk):
                                              last_name=customer.last_name, 
                                              passport_number=customer.passport_number)
     communication_history = customer.communication_history.all()
+    notes = customer.notes.all()[:5]  # İlişkili notları çek
 
-    if request.method == 'POST':
-        form = CustomerFileForm(request.POST, request.FILES)
-        if form.is_valid():
-            new_file = form.save(commit=False)
-            new_file.customer = customer
-            new_file.save()
+    # Not ekleme ve dosya yükleme formu için koşullar
+    if request.method == 'POST' and 'add_note' in request.POST:
+        note_form = NoteForm(request.POST)
+        if note_form.is_valid():
+            Note.objects.create(
+                customer=customer,
+                text=note_form.cleaned_data['note']
+                )
             return redirect('musteri:customer_detail', pk=customer.pk)
+        elif 'delete_note' in request.POST:  # Not silme işlemi
+            note_id = request.POST.get('delete_note')
+            Note.objects.filter(id=note_id, customer=customer).delete()
+            return redirect('musteri:customer_detail', pk=customer.pk)
+        else:
+            # Dosya yükleme işlemleri için
+            file_form = CustomerFileForm(request.POST, request.FILES)
+            if file_form.is_valid():
+                new_file = file_form.save(commit=False)
+                new_file.customer = customer
+                new_file.save()
+                return redirect('musteri:customer_detail', pk=customer.pk)
     else:
-        form = CustomerFileForm()
+        note_form = NoteForm()  # Not ekleme formu
+        file_form = CustomerFileForm()  # Dosya yükleme formu
 
     context = {
         'main_customer': customer,
         'same_customers': same_customers,
         'communication_history': communication_history,
-        'form': form,
+        'notes': notes,  # Notları context'e ekle
+        'note_form': note_form,  # Not formunu context'e ekle
+        'file_form': file_form,  # Dosya yükleme formunu context'e ekle
+        'note_form': note_form,  # Formu her zaman context'e ekle
+
     }
 
     return render(request, 'musteri/customer_detail.html', context)
+
+def delete_note(request, pk, note_id):
+    Note.objects.filter(id=note_id, customer_id=pk).delete()
+    return HttpResponseRedirect(reverse('musteri:customer_detail', args=[pk]))
+
+def customer_delete_view(request, pk):
+    if request.method == 'POST':
+        customer = get_object_or_404(Customer, pk=pk)
+        customer.delete()
+        messages.success(request, "Müşteri kaydı başarıyla silindi.")
+        return redirect('musteri:customer_list')
 
 def customer_query_view(request):
     if request.method == 'POST':

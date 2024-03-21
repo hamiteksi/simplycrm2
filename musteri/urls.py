@@ -9,6 +9,7 @@ urlpatterns = [
     path('customers/new/', views.customer_create_view, name='customer_create'),
     path('customers/<int:pk>/', views.customer_detail_view, name='customer_detail'),
     path('customers/<int:pk>/edit/', views.customer_edit_view, name='customer_edit'),
+    path('customers/delete/<int:pk>/', views.customer_delete_view, name='customer_delete'),
     path('customers/upload_pdf/', views.upload_pdf_view, name='upload_pdf'),  # yeni eklenen url
     path('customers/query/', views.customer_query_view, name='customer_query'),  # yeni yol
     path('customers/<int:pk>/ptt-track/', views.PTTTrackingView.as_view(), name='ptt-track'),
@@ -21,6 +22,10 @@ urlpatterns = [
     path('yapilacak/', views.yapilacak_list_view, name='yapilacak'),
     path('add_yapilacak/', views.add_yapilacak, name='add_yapilacak'),
     path('complete_yapilacak/<int:id>/', views.complete_yapilacak, name='complete_yapilacak'),
+    path('customers/<int:pk>/add_note/', views.add_note_to_customer, name='add_note'),
+    path('customers/<int:pk>/delete_note/<int:note_id>/', views.delete_note, name='delete_note'),
+
+
     
 
 
