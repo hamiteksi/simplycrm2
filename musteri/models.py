@@ -7,17 +7,17 @@ class Communication(models.Model):
     details = models.TextField()
 
 class Customer(models.Model):
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
+    first_name = models.CharField(max_length=50)
+    last_name = models.CharField(max_length=50)
     identity_number = models.CharField(max_length=11, null=True, blank=True)  # Kimlik numarası genellikle 11 hanelidir
-    nationality = models.CharField(max_length=30, null=True, blank=True)  
+    nationality = models.CharField(max_length=50, null=True, blank=True)  
     date_of_birth = models.DateField(null=True, blank=True)  
     marital_status = models.CharField(max_length=30, null=True, blank=True)  
     passport_number = models.CharField(max_length=30, null=True, blank=True)
     issuing_authority = models.CharField(max_length=100, null=True)  
     passport_date = models.CharField(max_length=100, null=True, blank=True)  
-    application_type = models.CharField(max_length=30, null=True, blank=True)  
-    residence_type = models.CharField(max_length=30, null=True, blank=True) 
+    application_type = models.CharField(max_length=50, null=True, blank=True)  
+    residence_type = models.CharField(max_length=50, null=True, blank=True) 
     residence_permit_start_date  = models.DateField(null=True, blank=True)
     residence_permit_end_date  = models.DateField(null=True, blank=True)
     passport_info = models.CharField(max_length=100, null=True, blank=True)
