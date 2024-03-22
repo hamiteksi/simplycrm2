@@ -30,9 +30,9 @@ class Customer(models.Model):
     mail = models.CharField(max_length=50, null=True, blank=True)
     STATUS_CHOICES = [
     ('basvuru_yapildi', 'Başvuru Yapıldı'),
-    ('dosyalar_verildi', 'Dosyalar Verildi'),
-    ('ptt_bekleniyor', 'PTT Bekleniyor'),
-    ('kart_alindi', 'Kart Alındı'),
+    ('dosyalar_verildi', 'Değerlendirmede'),
+    ('ptt_bekleniyor', 'Onay'),
+    ('kart_alindi', 'Kart Postada'),
     ('tamamlandi', 'Tamamlandı'),
     ]
     
