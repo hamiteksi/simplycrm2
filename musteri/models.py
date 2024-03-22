@@ -7,27 +7,27 @@ class Communication(models.Model):
     details = models.TextField()
 
 class Customer(models.Model):
-    first_name = models.CharField(max_length=50)
-    last_name = models.CharField(max_length=50)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
     identity_number = models.CharField(max_length=11, null=True, blank=True)  # Kimlik numarası genellikle 11 hanelidir
-    nationality = models.CharField(max_length=50, null=True, blank=True)  
+    nationality = models.CharField(max_length=100, null=True, blank=True)  
     date_of_birth = models.DateField(null=True, blank=True)  
-    marital_status = models.CharField(max_length=30, null=True, blank=True)  
-    passport_number = models.CharField(max_length=30, null=True, blank=True)
+    marital_status = models.CharField(max_length=100, null=True, blank=True)  
+    passport_number = models.CharField(max_length=100, null=True, blank=True)
     issuing_authority = models.CharField(max_length=100, null=True)  
     passport_date = models.CharField(max_length=100, null=True, blank=True)  
-    application_type = models.CharField(max_length=50, null=True, blank=True)  
-    residence_type = models.CharField(max_length=50, null=True, blank=True) 
+    application_type = models.CharField(max_length=100, null=True, blank=True)  
+    residence_type = models.CharField(max_length=100, null=True, blank=True) 
     residence_permit_start_date  = models.DateField(null=True, blank=True)
     residence_permit_end_date  = models.DateField(null=True, blank=True)
     passport_info = models.CharField(max_length=100, null=True, blank=True)
     service_type = models.CharField(max_length=100, blank=True)
-    ptt_code = models.CharField(max_length=50, null=True, blank=True)
+    ptt_code = models.CharField(max_length=100, null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
     payment_made = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     communication_history = models.ManyToManyField(Communication, blank=True)
-    application_number = models.CharField(max_length=50, null=True, blank=True)
-    mail = models.CharField(max_length=50, null=True, blank=True)
+    application_number = models.CharField(max_length=100, null=True, blank=True)
+    mail = models.CharField(max_length=100, null=True, blank=True)
     STATUS_CHOICES = [
     ('basvuru_yapildi', 'Başvuru Yapıldı'),
     ('dosyalar_verildi', 'Değerlendirmede'),
