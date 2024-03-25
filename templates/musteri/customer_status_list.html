@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Customer Status</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center">Müşteri Durumları</h1>
+
+        <table class="table mt-4">
+            <thead>
+                <tr>
+                    <th scope="col">First Name</th>
+                    <th scope="col">Last Name</th>
+                    <th scope="col">PTT Code</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">İncele</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td>{{ customer.first_name }}</td>
+                    <td>{{ customer.last_name }}</td>
+                    <td>{{ customer.ptt_code }}</td>
+                    <td>{{ customer.get_status_display }}</td>
+                    <td>
+                        {% if customer.phone_number and customer.phone_number != 'nan' %}
+                        <!-- WhatsApp bağlantısını oluştur -->
+                        <a href="https://wa.me/+90{{ customer.phone_number }}" class="btn btn-primary">WhatsApp ile
+                            İletişime Geç</a>
+                        {% else %}
+                        Telefon numarası yok
+                        {% endif %}
+
+                    </td>
+                    <td>
+                        <!-- İncele butonunu oluştur -->
+                        <a class="btn btn-success btn-sm"
+                            href="{% url 'musteri:customer_detail' customer.pk %}">İncele</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

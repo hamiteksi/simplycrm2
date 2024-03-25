@@ -186,6 +186,13 @@ def customer_expiry_list(request):
 
     return response
 
+def customer_status_list(request):
+    # "Tamamlandı" durumunu hariç tutarak belirli durumları filtrele
+    customers = Customer.objects.filter(
+        status__in=['basvuru_yapildi', 'dosyalar_verildi', 'ptt_bekleniyor', 'kart_alindi']
+    ).order_by('status')
+
+    return render(request, 'musteri/customer_status_list.html', {'customers': customers})
 
 def customer_create_view(request):
     if request.method == 'POST':
