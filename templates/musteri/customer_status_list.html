@@ -12,6 +12,8 @@
                     <th scope="col">Last Name</th>
                     <th scope="col">PTT Code</th>
                     <th scope="col">Status</th>
+                    <th scope="col">Expiry Date</th>
+                    <th scope="col">Contact</th>
                     <th scope="col">İncele</th>
                 </tr>
             </thead>
@@ -22,6 +24,7 @@
                     <td>{{ customer.last_name }}</td>
                     <td>{{ customer.ptt_code }}</td>
                     <td>{{ customer.get_status_display }}</td>
+                    <td>{{ customer.residence_permit_end_date }}</td>
                     <td>
                         {% if customer.phone_number and customer.phone_number != 'nan' %}
                         <!-- WhatsApp bağlantısını oluştur -->
