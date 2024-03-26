@@ -37,6 +37,7 @@ class Customer(models.Model):
     ]
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='basvuru_yapildi', verbose_name="Durum")
+    last_check_date = models.DateTimeField(null=True, blank=True, verbose_name="Son Kontrol Tarihi")
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"

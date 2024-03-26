@@ -26,6 +26,7 @@ from openpyxl import Workbook
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 
 
@@ -361,6 +362,13 @@ def create_customer(data):
     )
     customer.save()
 
+# last_check_update view'ınızda redirect fonksiyonunu düzeltin
+@require_POST
+def last_check_update(request, customer_id):
+    customer = get_object_or_404(Customer, id=customer_id)
+    customer.last_check_date = timezone.now()
+    customer.save()
+    return redirect('musteri:customer_detail', pk=customer.id)  # URL tanımınıza uygun olarak pk kullanın
 
 def customer_detail_view(request, pk):
     customer = get_object_or_404(Customer, pk=pk)

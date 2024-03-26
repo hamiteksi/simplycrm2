@@ -110,6 +110,16 @@
                                             <button type="button" class="btn btn-danger" onclick="confirmDelete()">Kaydı
                                                 Sil</button>
                                         </form>
+
+                                    </div>
+                                    <div class="col-auto">
+
+                                        <!-- Müşteri detay sayfasında uygun bir yere ekleyin -->
+                                        <form action="{% url 'musteri:last_check_update' main_customer.id %}"
+                                            method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-info">Kontrol Yapıldı</button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>

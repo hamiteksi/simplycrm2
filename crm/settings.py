@@ -142,6 +142,7 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
+USE_L10N = False
 
 USE_TZ = True
 
@@ -211,3 +212,5 @@ LOGIN_REDIRECT_URL = '/musteri/customers/'
 
 # Kullanıcı çıkış yaptıktan sonra ana sayfaya yönlendir
 LOGOUT_REDIRECT_URL = '/'
+
+DATE_FORMAT = 'd/m/Y'
