@@ -1,62 +1,201 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Müşteriler{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Müşteriler</li>
+{% endblock %}
 
 {% block content %}
-<!-- Buraya içeriklerinizi yerleştirin -->
-{% if messages %}
-{% for message in messages %}
-<div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-    {{ message }}
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-    </button>
-</div>
-{% endfor %}
-{% endif %}
-
-
-<body>
-    <h2>Customers</h2>
-
-    <div id="main-content" class="container mt-4" style="margin-left: 0px;">
-        <div class="row">
-            <div class="col">
-                <!-- Change this -->
-                <button id="yapilacaklarBtn" class="btn btn-primary" style="margin-top: 10px">Yapılacaklar
-                    Listesi</button>
-
-                <div id="yapilacaklarPanel" class="col-6 mx-auto border border-light p-3" style="display: none;">
-                    <div class="input-group mb-3">
-                        <input type="text" id="yapilacakInput" class="form-control" placeholder="Yapılacak">
-                        <input type="text" id="detayInput" class="form-control" placeholder="Detay">
-                        <div class="input-group-append">
-                            <button id="addYapilacakBtn" class="btn btn-primary">+</button>
-                        </div>
-                    </div>
-                    <ul id="yapilacaklarList" class="list-group list-group-flush">
-                        {% for yapilacak in yapilacaklar %}
-                        <li id="{{ yapilacak.id }}" class="list-group-item mb-3">
-                            {{ yapilacak.olusturulma_tarihi.date }}: {{ yapilacak.yapilacak }} - {{ yapilacak.detay }}
-                            <button class="tamamlandiBtn btn btn-sm btn-success">✔️</button>
-                        </li>
-                        {% endfor %}
-                        {% for yapilacak in completed_yapilacaklar %}
-                        <li id="{{ yapilacak.id }}" class="list-group-item mb-3"
-                            style="text-decoration: line-through; color: grey;">
-                            {{ yapilacak.olusturulma_tarihi.date }}: {{ yapilacak.yapilacak }} - {{ yapilacak.detay }}
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-
-
-
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        {% load django_tables2 %}
-                        {% render_table table %}
-                    </table>
-                </div>
-            </div>
+<div class="container-fluid">
+    <!-- Başlık ve Arama -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-users text-primary me-2"></i>
+            Müşteriler
+        </h1>
+        <div class="d-flex">
+            <a href="{% url 'musteri:customer_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>
+                Yeni Müşteri
+            </a>
         </div>
     </div>
-    {% endblock %}
+
+    <!-- Filtreleme ve Arama -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" id="filterForm" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Arama</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" name="search" class="form-control" placeholder="İsim, başvuru no, telefon..." value="{{ search_query }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Durum</label>
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">Tüm Durumlar</option>
+                        {% for status_code, status_label in status_choices %}
+                        <option value="{{ status_code }}" {% if status_filter == status_code %}selected{% endif %}>
+                            {{ status_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sıralama</label>
+                    <select name="sort" class="form-select" onchange="this.form.submit()">
+                        <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>En Yeni</option>
+                        <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>En Eski</option>
+                        <option value="name" {% if sort_by == 'name' %}selected{% endif %}>İsim (A-Z)</option>
+                        <option value="-name" {% if sort_by == '-name' %}selected{% endif %}>İsim (Z-A)</option>
+                        <option value="application_number" {% if sort_by == 'application_number' %}selected{% endif %}>Başvuru No (Artan)</option>
+                        <option value="-application_number" {% if sort_by == '-application_number' %}selected{% endif %}>Başvuru No (Azalan)</option>
+                        <option value="residence_start" {% if sort_by == 'residence_start' %}selected{% endif %}>İkamet Başlangıç (Artan)</option>
+                        <option value="-residence_start" {% if sort_by == '-residence_start' %}selected{% endif %}>İkamet Başlangıç (Azalan)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-1"></i>
+                        Filtrele
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Müşteri Listesi -->
+    <div class="card">
+        <div class="card-body">
+            {% if customers %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%">
+                                    <a href="?sort={% if sort_by == 'name' %}-name{% else %}name{% endif %}&search={{ search_query }}&status={{ status_filter }}" class="text-dark text-decoration-none">
+                                        Ad Soyad
+                                        {% if sort_by == 'name' %}
+                                            <i class="fas fa-sort-up"></i>
+                                        {% elif sort_by == '-name' %}
+                                            <i class="fas fa-sort-down"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th style="width: 20%">
+                                    <a href="?sort={% if sort_by == 'application_number' %}-application_number{% else %}application_number{% endif %}&search={{ search_query }}&status={{ status_filter }}" class="text-dark text-decoration-none">
+                                        Başvuru No
+                                        {% if sort_by == 'application_number' %}
+                                            <i class="fas fa-sort-up"></i>
+                                        {% elif sort_by == '-application_number' %}
+                                            <i class="fas fa-sort-down"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th style="width: 20%">
+                                    <a href="?sort={% if sort_by == 'residence_start' %}-residence_start{% else %}residence_start{% endif %}&search={{ search_query }}&status={{ status_filter }}" class="text-dark text-decoration-none">
+                                        İkamet Başlangıç
+                                        {% if sort_by == 'residence_start' %}
+                                            <i class="fas fa-sort-up"></i>
+                                        {% elif sort_by == '-residence_start' %}
+                                            <i class="fas fa-sort-down"></i>
+                                        {% else %}
+                                            <i class="fas fa-sort"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th style="width: 15%">Telefon</th>
+                                <th style="width: 10%">Durum</th>
+                                <th style="width: 10%">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for customer in customers %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'musteri:customer_detail' customer.id %}" class="text-decoration-none">
+                                        {{ customer.get_full_name }}
+                                    </a>
+                                </td>
+                                <td>{{ customer.application_number|default:"-" }}</td>
+                                <td>{{ customer.residence_permit_start_date|date:"d.m.Y"|default:"-" }}</td>
+                                <td>{{ customer.phone|default:"-" }}</td>
+                                <td>
+                                    <span class="badge bg-{{ customer.get_status_color }}">
+                                        {{ customer.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'musteri:customer_detail' customer.id %}" class="btn btn-sm btn-outline-primary" title="Detay">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'musteri:customer_edit' customer.id %}" class="btn btn-sm btn-outline-warning" title="Düzenle">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% if customer.phone %}
+                                        <a href="https://wa.me/{{ customer.phone|cut:' '|cut:'+'|cut:'('|cut:')'|cut:'-' }}" target="_blank" class="btn btn-sm btn-outline-success" title="WhatsApp">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if customers.has_other_pages %}
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if customers.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ customers.previous_page_number }}&search={{ search_query }}&sort={{ sort_by }}&status={{ status_filter }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in customers.paginator.page_range %}
+                            {% if customers.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}&search={{ search_query }}&sort={{ sort_by }}&status={{ status_filter }}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if customers.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ customers.next_page_number }}&search={{ search_query }}&sort={{ sort_by }}&status={{ status_filter }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <p class="text-muted mb-0">Henüz müşteri eklenmemiş veya arama kriterlerine uygun müşteri bulunamadı.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

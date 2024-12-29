@@ -1,64 +1,75 @@
 {% load static %}
 
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
+    <div class="container-fluid">
+        <!-- Sidebar Toggle -->
+        <button class="btn btn-link sidebar-toggle d-md-none me-3">
+            <i class="fas fa-bars"></i>
+        </button>
 
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-  <a class="navbar-brand" href="{% url 'musteri:customer_list' %}">
-    <img src="{% static 'images/logo_simply.png' %}" alt="Logo" style="height: 40px;">
-  </a>
-  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
-    aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+        <!-- Brand -->
+        <a class="navbar-brand" href="{% url 'musteri:dashboard' %}">
+            <img src="{% static 'images/logo_simply.png' %}" alt="SimplyCRM" height="32">
+        </a>
 
-  <div class="collapse navbar-collapse" id="navbarContent">
-    <ul class="navbar-nav me-auto">
-      <li class="nav-item active">
-        <a class="nav-link" href="{% url 'musteri:customer_list' %}">Home <span class="sr-only"></span></a>
-      </li>
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="customerDropdown" role="button" data-bs-toggle="dropdown"
-          aria-haspopup="true" aria-expanded="false">
-          Müşteri
-        </a>
-        <div class="dropdown-menu" aria-labelledby="customerDropdown">
-          <a class="dropdown-item" href="{% url 'musteri:customer_create' %}">Yeni Müşteri</a>
-          <a class="dropdown-item" href="{% url 'musteri:upload_pdf' %}">Yeni Müşteri Dosyadan</a>
-          <div class="dropdown-divider"></div>
-          <a class="dropdown-item" href="{% url 'musteri:customer_query' %}">Sorgula</a>
-        </div>
-      </li>
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="otherActionsDropdown" role="button" data-bs-toggle="dropdown"
-          aria-expanded="false">
-          Diğer İşlemler
-        </a>
-        <ul class="dropdown-menu" aria-labelledby="otherActionsDropdown">
-          <li><a class="dropdown-item" href="{% url 'musteri:expense' %}">Masraf Hesapla</a></li>
-          <li><a class="dropdown-item" href="{% url 'musteri:yapilacak' %}">Yapılacak Listesi</a></li>
+        <!-- Search Form -->
+        <form class="d-none d-md-flex ms-auto me-4" method="GET" action="{% url 'musteri:customer_list' %}">
+            <div class="input-group">
+                <input type="search" class="form-control" name="search" 
+                       placeholder="Search customers..." value="{{ search_term }}">
+                <button class="btn btn-outline-primary" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+
+        <!-- Right Navigation -->
+        <ul class="navbar-nav">
+            <!-- Notifications -->
+            <li class="nav-item dropdown">
+                <a class="nav-link" href="#" id="notificationsDropdown" role="button" 
+                   data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-bell"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        3
+                    </span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown">
+                    <h6 class="dropdown-header">Notifications</h6>
+                    <a class="dropdown-item" href="#">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-user-plus text-success"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-2">
+                                <p class="mb-0">New customer added</p>
+                                <small class="text-muted">5 minutes ago</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </li>
+
+            <!-- User Menu -->
+            <li class="nav-item dropdown ms-3">
+                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" 
+                   id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-user-circle fs-5 me-2"></i>
+                    {{ request.user.get_full_name }}
+                </a>
+                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <a class="dropdown-item" href="{% url 'musteri:profile' %}">
+                        <i class="fas fa-user me-2"></i> Profile
+                    </a>
+                    <a class="dropdown-item" href="{% url 'musteri:settings' %}">
+                        <i class="fas fa-cog me-2"></i> Settings
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                    </a>
+                </div>
+            </li>
         </ul>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'musteri:customer_expiry_list' %}">İkameti Sona Erenler</a>
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'musteri:customer_status_list' %}">Durum Kontrol Et</a>
-      </li>
-      </li>
-    </ul>
-
-    <form method="GET" class="d-flex my-2 my-lg-0">
-      <input class="form-control me-2" type="search" name="search_term" placeholder="Arama terimi girin">
-      <button class="btn btn-outline-success me-2" type="submit">Ara</button>
-      <button class="btn btn-outline-success" type="button"
-        onclick="location.href='{% url 'musteri:customer_list' %}'">Temizle</button>
-    </form>
-    <!-- Çıkış Yap Formu -->
-    <!-- Kullanıcı giriş yapmışsa çıkış yapma butonunu göster -->
-    {% if user.is_authenticated %}
-    <form action="{% url 'logout' %}" method="post" class="form-inline my-2 my-lg-0">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-danger my-2 my-sm-0">Çıkış Yap</button>
-    </form>
-    {% endif %}
-
-  </div>
+    </div>
 </nav>

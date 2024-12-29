@@ -1,48 +1,41 @@
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-
-    $("#yapilacaklarBtn").click(function () {
-        $("#yapilacaklarPanel").toggle();
+$(document).ready(function() {
+    // Toggle Tasks Panel
+    $("#yapilacaklarBtn").click(function() {
+        $("#yapilacaklarPanel").slideToggle();
     });
 
-    $("#addYapilacakBtn").click(function () {
-        var yapilacak = $("#yapilacakInput").val();
-        var detay = $("#detayInput").val();
-        $.post("{% url 'musteri:add_yapilacak' %}", { yapilacak: yapilacak, detay: detay }, function (data) {
-            if (data.success) {
-                var yapilacakItem = "<li>" + yapilacak + ": " + detay + '<button class="tamamlandiBtn">✔️</button>' + "</li>";
-                $("#yapilacaklarList").prepend(yapilacakItem);
-                $("#yapilacakInput").val("");
-                $("#detayInput").val("");
-            }
+    // Add Task
+    $("#yapilacakForm").submit(function(e) {
+        e.preventDefault();
+        var task = $("#yapilacakInput").val();
+        if (task) {
+            $.post("{% url 'musteri:add_yapilacak' %}", {
+                'yapilacak': task,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            }).done(function(response) {
+                location.reload();
+            });
+        }
+    });
+
+    // Complete Task
+    $(".tamamlandiBtn").click(function() {
+        var taskId = $(this).closest('li').attr('id');
+        $.post("{% url 'musteri:complete_yapilacak' 0 %}".replace('0', taskId), {
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        }).done(function(response) {
+            location.reload();
         });
     });
 
-    $("#yapilacaklarList").on("click", ".tamamlandiBtn", function () {
-        var id = $(this).parent().attr("id");
-        var btn = $(this);
-        $.post("{% url 'musteri:complete_yapilacak' id=123 %}".replace('123', id), function (data) {
-            if (data.success) {
-                btn.parent().css("text-decoration", "line-through");
-                btn.parent().css("color", "#ccc");
-            }
-        });
+    // Toggle Sidebar
+    $('.sidebar-toggle').click(function() {
+        $('.sidebar-content').toggleClass('active');
+        $('.toggle-icon').html($('.sidebar-content').hasClass('active') ? '>' : '<');
     });
-
-
+});
 </script>
-<script>
-    $(document).ready(function () {
-        $('.sidebar-toggle').click(function () {
-            // Sidebar içeriğini aç/kapa
-            $('.sidebar-content').toggleClass('active');
-
-            // Buton simgesini güncelle
-            if ($('.sidebar-content').hasClass('active')) {
-                $('.toggle-icon').html('&gt;'); // Sidebar açıksa ">" simgesini göster
-            } else {
-                $('.toggle-icon').html('&lt;'); // Sidebar kapalıysa "<" simgesini göster
-            }
-        });
-    });
-</script>
+{% block extra_js %}{% endblock %}

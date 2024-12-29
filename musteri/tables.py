@@ -1,31 +1,52 @@
 import django_tables2 as tables
+from django.utils.html import format_html
 from .models import Customer
 
 class CustomerTable(tables.Table):
-    edit = tables.TemplateColumn(template_name='musteri/edit_column.html', orderable=False)
-    detail = tables.TemplateColumn(template_name='musteri/detail_column.html', orderable=False)
-    passport_number = tables.Column(default=" ", empty_values=[])
-    application_number = tables.Column(default=" ", empty_values=[])
-    identity_number = tables.Column(empty_values=[])  # We want to handle NaN values ourselves
-
-    def render_identity_number(self, value):
-        if value is None:
-        # Eğer value None ise, boş bir string veya belirtmek istediğiniz bir metni döndürün
-            return "Bilgi Yok"
-        try:
-            # Try to convert the value to float and then to int
-            float_value = float(value)
-            int_value = int(float_value)
-            return str(int_value)
-        except ValueError:
-            # If value is not a float, just return it as is
-            return value
+    actions = tables.TemplateColumn(
+        template_code='''
+            <a href="{% url 'musteri:customer_detail' record.id %}" class="btn btn-info btn-sm">
+                <i class="fas fa-eye"></i>
+            </a>
+            <a href="{% url 'musteri:customer_edit' record.id %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-edit"></i>
+            </a>
+        ''',
+        orderable=False,
+        verbose_name='Actions'
+    )
+    
+    full_name = tables.Column(empty_values=(), order_by=('first_name', 'last_name'))
+    status_display = tables.Column(empty_values=(), verbose_name='Status')
+    
+    def render_full_name(self, record):
+        return f'{record.first_name} {record.last_name}'
+    
+    def render_status_display(self, record):
+        status_colors = {
+            'basvuru_yapildi': 'warning',
+            'dosyalar_verildi': 'info',
+            'ptt_bekleniyor': 'primary',
+            'kart_alindi': 'success',
+            'tamamlandi': 'secondary'
+        }
+        color = status_colors.get(record.status, 'secondary')
+        status_text = dict(Customer.STATUS_CHOICES).get(record.status, record.status)
+        return format_html(
+            '<span class="badge bg-{}">{}</span>',
+            color,
+            status_text
+        )
 
     class Meta:
         model = Customer
-        template_name = 'django_tables2/bootstrap.html'
-        fields = ('id', 'first_name', 'last_name', 'application_number', 'nationality', 'passport_number', 'identity_number', 'residence_type', 'residence_permit_start_date', 'residence_permit_end_date')
-        empty_text = ""
-
-
-
+        template_name = 'django_tables2/bootstrap5.html'
+        fields = ('id', 'full_name', 'phone_number', 'nationality', 'passport_number', 
+                 'residence_type', 'residence_permit_start_date', 'residence_permit_end_date',
+                 'status_display', 'actions')
+        attrs = {
+            'class': 'table table-striped table-hover',
+            'thead': {
+                'class': 'table-dark'
+            }
+        }

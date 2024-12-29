@@ -1,36 +1,233 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.core.files.storage import FileSystemStorage
-from django.views import View
-from django.db.models import Q, DateField, F
-from django.db.models.functions import Cast
-from .models import Customer, ExpenseItem, CustomerFile, Yapilacak, Note
-from .forms import CustomerForm, CustomerQueryForm, BasvuruForm, ExpenseForm, CalculateExpensesForm, CustomerFileForm, YapilacakForm, NoteForm
-import tabula
-import pandas as pd
-from django.conf import settings
-from django.http import JsonResponse, FileResponse
-from django.views import View
-from .ptt_track import ptt_track  # ptt_track isimli bir Python dosyası oluşturun ve PTT takip kodunuzu oraya taşıyın.
-import requests
-from bs4 import BeautifulSoup
-from django.http import FileResponse, HttpResponse, HttpResponseRedirect
-from io import BytesIO
-from datetime import date, timedelta
-from django.utils import timezone
-from itertools import groupby
-from .tables import CustomerTable
-from django_tables2 import RequestConfig
-from django.views.decorators.csrf import csrf_exempt
-import urllib.parse
-from openpyxl import Workbook
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.db import models
+from django.db.models import Q
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from .models import Customer, Yapilacak, Note
+from dokuman.models import Dokuman, DokumanTipi, BasvuruSureci
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q, DateField, F, Count, Sum
+from django.db.models.functions import Cast, TruncMonth, TruncDate
+from django.core.files.storage import FileSystemStorage
+from django.views import View
+from django.http import FileResponse, HttpResponseRedirect, JsonResponse, HttpResponse
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.conf import settings
+from django.utils import timezone
+import json
+import requests
+import tabula
+import pandas as pd
+from bs4 import BeautifulSoup
+from io import BytesIO
+import urllib.parse
+from openpyxl import Workbook
+from datetime import date, timedelta
+from itertools import groupby
+from django_tables2 import RequestConfig
+from .ptt_track import ptt_track
 
+from .models import Customer, CustomerFile, Note, Communication, Yapilacak, CalendarEvent, ExpenseItem, Payment
+from dokuman.models import Dokuman, DokumanTipi, BasvuruSureci
+from .forms import (
+    CustomerForm, CustomerQueryForm, 
+    ExpenseForm, CalculateExpensesForm, CustomerFileForm, 
+    YapilacakForm, NoteForm
+)
+from .tables import CustomerTable
 
+# Dashboard View
+@login_required
+def dashboard(request):
+    total_customers = Customer.objects.count()
+    active_tasks = Yapilacak.objects.filter(tamamlandi=False).count()
+    
+    pending_tasks = Yapilacak.objects.filter(tamamlandi=False).order_by('son_tarih')[:5]
+    completed_tasks = Yapilacak.objects.filter(tamamlandi=True).order_by('-updated_at')[:5]
+    recent_customers = Customer.objects.all().order_by('-created_at')[:5]
+    customers = Customer.objects.all()
+    
+    # Monthly statistics
+    today = timezone.now()
+    six_months_ago = today - timezone.timedelta(days=180)
+    monthly_stats = []
+    
+    for i in range(6):
+        month_start = today - timezone.timedelta(days=30 * i)
+        month_end = month_start - timezone.timedelta(days=30)
+        count = Customer.objects.filter(created_at__gte=month_end, created_at__lt=month_start).count()
+        monthly_stats.append({
+            'month': month_end,
+            'count': count
+        })
+    
+    monthly_stats.reverse()
+    
+    return render(request, 'dashboard.html', {
+        'total_customers': total_customers,
+        'active_tasks': active_tasks,
+        'pending_tasks': pending_tasks,
+        'completed_tasks': completed_tasks,
+        'recent_customers': recent_customers,
+        'monthly_stats': monthly_stats,
+        'customers': customers
+    })
 
+# Profile Views
+@login_required
+def profile(request):
+    return render(request, 'profile.html')
 
+@login_required
+def settings(request):
+    return render(request, 'settings.html')
+
+# Calendar View
+@login_required
+def calendar(request):
+    # Get all tasks and format them for calendar
+    tasks = Yapilacak.objects.all()
+    calendar_events = []
+    
+    for task in tasks:
+        calendar_events.append({
+            'id': task.id,
+            'title': task.yapilacak,
+            'start': task.created_at.isoformat() if task.created_at else timezone.now().isoformat(),
+            'end': task.tamamlanma_tarihi.isoformat() if task.tamamlanma_tarihi else None,
+            'allDay': True,
+            'className': 'bg-success' if task.tamamlandi else 'bg-warning'
+        })
+    
+    context = {
+        'calendar_events': json.dumps(calendar_events)
+    }
+    return render(request, 'calendar.html', context)
+
+# Reports View
+@login_required
+def reports(request):
+    # Get current date and 6 months ago
+    today = timezone.now().date()
+    six_months_ago = today - timezone.timedelta(days=180)
+    
+    # Customer data
+    customers = Customer.objects.filter(created_at__date__gte=six_months_ago)
+    customer_data = []
+    customer_labels = []
+    for i in range(6):
+        month = today - timezone.timedelta(days=30*i)
+        count = customers.filter(created_at__date__month=month.month).count()
+        customer_data.append(count)
+        customer_labels.append(month.strftime('%B'))
+    customer_labels.reverse()
+    customer_data.reverse()
+    
+    # Task data
+    completed_tasks = Yapilacak.objects.filter(tamamlandi=True).count()
+    pending_tasks = Yapilacak.objects.filter(tamamlandi=False).count()
+    
+    # Expense data
+    expenses = ExpenseItem.objects.filter(created_at__date__gte=six_months_ago)
+    expense_data = []
+    expense_labels = []
+    for i in range(6):
+        month = today - timezone.timedelta(days=30*i)
+        amount = expenses.filter(created_at__date__month=month.month).aggregate(total=Sum('amount'))['total'] or 0
+        expense_data.append(float(amount))
+        expense_labels.append(month.strftime('%B'))
+    expense_labels.reverse()
+    expense_data.reverse()
+    
+    # Document data
+    valid_documents = CustomerFile.objects.filter(
+        expiry_date__gt=today + timezone.timedelta(days=30)
+    ).count()
+    expiring_documents = CustomerFile.objects.filter(
+        expiry_date__range=[today, today + timezone.timedelta(days=30)]
+    ).count()
+    expired_documents = CustomerFile.objects.filter(
+        expiry_date__lt=today
+    ).count()
+    
+    context = {
+        'customer_count': Customer.objects.count(),
+        'task_count': pending_tasks,
+        'expense_total': ExpenseItem.objects.aggregate(total=Sum('amount'))['total'] or 0,
+        'document_count': CustomerFile.objects.count(),
+        'customer_labels': customer_labels,
+        'customer_data': customer_data,
+        'completed_tasks': completed_tasks,
+        'pending_tasks': pending_tasks,
+        'expense_labels': expense_labels,
+        'expense_data': expense_data,
+        'valid_documents': valid_documents,
+        'expiring_documents': expiring_documents,
+        'expired_documents': expired_documents,
+    }
+    return render(request, 'musteri/reports.html', context)
+
+# Task Views
+@login_required
+def yapilacak_list(request):
+    tasks = Yapilacak.objects.all().order_by('-created_at')
+    customers = Customer.objects.all()
+    return render(request, 'musteri/yapilacak_list.html', {
+        'tasks': tasks,
+        'customers': customers
+    })
+
+@login_required
+def add_yapilacak(request):
+    if request.method == 'POST':
+        yapilacak = request.POST.get('yapilacak')
+        customer_id = request.POST.get('customer')
+        
+        task = Yapilacak(yapilacak=yapilacak)
+        if customer_id:
+            try:
+                customer = Customer.objects.get(id=customer_id)
+                task.customer = customer
+            except Customer.DoesNotExist:
+                pass
+        task.save()
+        
+        messages.success(request, 'Task added successfully.')
+        return redirect('musteri:yapilacak')
+    return redirect('musteri:yapilacak')
+
+@login_required
+def complete_task(request, task_id):
+    if request.method == 'POST':
+        task = get_object_or_404(Yapilacak, id=task_id)
+        task.tamamlandi = not task.tamamlandi
+        task.save()
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'}, status=400)
+
+# Deal Views
+@login_required
+def deal_list(request):
+    return render(request, 'deals/list.html')
+
+@login_required
+def deal_create(request):
+    return render(request, 'deals/create.html')
+
+# Customer Views (renamed for consistency)
+@login_required
+def customer_list(request):
+    return customer_list_view(request)
+
+@login_required
+def customer_create(request):
+    return customer_create_view(request)
 
 @csrf_exempt
 def complete_yapilacak(request, id):
@@ -42,17 +239,31 @@ def complete_yapilacak(request, id):
         return JsonResponse({"success": True}, status=200)
     else:
         return JsonResponse({"success": False}, status=400)
+
 @csrf_exempt
 def add_yapilacak(request):
     if request.method == "POST":
-        yapilacak = request.POST.get("yapilacak")
-        detay = request.POST.get("detay")
-        new_item = Yapilacak(yapilacak=yapilacak, detay=detay)
-        new_item.save()
-        return JsonResponse({"success": True}, status=200)
+        baslik = request.POST.get("yapilacak")
+        aciklama = request.POST.get("detay")
+        customer_id = request.POST.get("customer_id")
+        son_tarih = timezone.now() + timezone.timedelta(days=7)  # Varsayılan olarak 1 hafta sonra
+        
+        try:
+            customer = Customer.objects.get(id=customer_id) if customer_id else None
+            new_item = Yapilacak(
+                customer=customer,
+                baslik=baslik,
+                aciklama=aciklama,
+                son_tarih=son_tarih
+            )
+            new_item.save()
+            return JsonResponse({"success": True}, status=200)
+        except Customer.DoesNotExist:
+            return JsonResponse({"error": "Müşteri bulunamadı"}, status=404)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
     else:
         return JsonResponse({"success": False}, status=400)
-    
 
 def yapilacak_list_view(request):
     if request.method == "POST":
@@ -208,39 +419,84 @@ def customer_create_view(request):
 def add_note_to_customer(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     if request.method == 'POST':
-        form = NoteForm(request.POST)
-        if form.is_valid():
-            new_note = form.save(commit=False)
-            new_note.customer = customer
-            new_note.save()
-            return redirect('musteri:customer_detail', pk=pk)  # 'musteri:customer_detail' URL ismi doğruysa
-    else:
-        return redirect('musteri:customer_detail', pk=pk)  # veya uygun bir hata mesajı gösterin
+        content = request.POST.get('content')
+        if content:
+            Note.objects.create(
+                customer=customer,
+                content=content
+            )
+            messages.success(request, 'Not başarıyla eklendi.')
+    return redirect('musteri:customer_detail', pk=pk)
 
+@login_required
 def customer_list_view(request):
-    search_term = request.GET.get('search_term', '')
-
-    customers = Customer.objects.filter(
-        Q(first_name__icontains=search_term) | 
-        Q(last_name__icontains=search_term) |
-        Q(phone_number__icontains=search_term) |
-        Q(application_number__icontains=search_term) |
-        Q(passport_number__icontains=search_term) |
-        Q(identity_number__icontains=search_term)
-
-    ).order_by('-application_number')
-
-
-    table = CustomerTable(customers)  # Use the filtered queryset here
-
-    RequestConfig(request, paginate={'per_page': 10}).configure(table)
-    # Get all uncompleted tasks
-    yapilacaklar = Yapilacak.objects.filter(tamamlandi=False).order_by('-olusturulma_tarihi')
-
-    # Get last 3 completed tasks
-    completed_yapilacaklar = Yapilacak.objects.filter(tamamlandi=True).order_by('-tamamlanma_tarihi')[:3]
-
-    return render(request, 'musteri/customer_list.html', {'table': table, 'yapilacaklar': yapilacaklar, 'completed_yapilacaklar': completed_yapilacaklar})
+    # Filtreleme parametrelerini al
+    search_query = request.GET.get('search', '')
+    sort_by = request.GET.get('sort', '-created_at')
+    status_filter = request.GET.get('status', '')
+    
+    # Base queryset
+    customers = Customer.objects.all()
+    
+    # Arama filtresi
+    if search_query:
+        customers = customers.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(application_number__icontains=search_query) |
+            Q(phone__icontains=search_query) |
+            Q(email__icontains=search_query)
+        )
+    
+    # Durum filtresi
+    if status_filter:
+        customers = customers.filter(status=status_filter)
+    
+    # Sıralama
+    valid_sort_fields = {
+        'name': 'first_name',
+        '-name': '-first_name',
+        'application_number': 'application_number',
+        '-application_number': '-application_number',
+        'residence_start': 'residence_permit_start_date',
+        '-residence_start': '-residence_permit_start_date',
+        'created_at': 'created_at',
+        '-created_at': '-created_at',
+    }
+    
+    if sort_by in valid_sort_fields:
+        sort_field = valid_sort_fields[sort_by]
+        # İsme göre sıralamada soyadını da dikkate al
+        if sort_field in ['first_name', '-first_name']:
+            if sort_field.startswith('-'):
+                customers = customers.order_by('-first_name', '-last_name')
+            else:
+                customers = customers.order_by('first_name', 'last_name')
+        else:
+            customers = customers.order_by(sort_field)
+    else:
+        customers = customers.order_by('-created_at')
+    
+    # Pagination
+    paginator = Paginator(customers, 20)
+    page = request.GET.get('page')
+    
+    try:
+        customers = paginator.get_page(page)
+    except PageNotAnInteger:
+        customers = paginator.get_page(1)
+    except EmptyPage:
+        customers = paginator.get_page(paginator.num_pages)
+    
+    context = {
+        'customers': customers,
+        'search_query': search_query,
+        'sort_by': sort_by,
+        'status_filter': status_filter,
+        'status_choices': Customer.STATUS_CHOICES,
+    }
+    
+    return render(request, 'musteri/customer_list.html', context)
 
 def customer_edit_view(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
@@ -265,7 +521,6 @@ def upload_pdf_view(request):
         return redirect('musteri:customer_list')
 
     return render(request, 'musteri/upload_pdf.html')
-
 
 def process_pdf(file_path):
     print(settings.MEDIA_ROOT)
@@ -362,58 +617,47 @@ def create_customer(data):
     )
     customer.save()
 
-# last_check_update view'ınızda redirect fonksiyonunu düzeltin
-@require_POST
+# last_check_update view'ınızı güncelliyorum
+@login_required
 def last_check_update(request, customer_id):
-    customer = get_object_or_404(Customer, id=customer_id)
-    customer.last_check_date = timezone.now()
-    customer.save()
-    return redirect('musteri:customer_detail', pk=customer.id)  # URL tanımınıza uygun olarak pk kullanın
+    if request.method == 'POST':
+        customer = get_object_or_404(Customer, id=customer_id)
+        customer.last_check_date = timezone.now()
+        customer.save()
+        messages.success(request, 'Son kontrol tarihi güncellendi.')
+        return redirect('musteri:customer_detail', pk=customer_id)
+    return redirect('musteri:customer_detail', pk=customer_id)
 
+@login_required
 def customer_detail_view(request, pk):
-    customer = get_object_or_404(Customer, pk=pk)
-    same_customers = Customer.objects.filter(first_name=customer.first_name, 
-                                             last_name=customer.last_name, 
-                                             passport_number=customer.passport_number)
-    communication_history = customer.communication_history.all()
-    notes = customer.notes.all()[:5]  # İlişkili notları çek
-
-    # Not ekleme ve dosya yükleme formu için koşullar
-    if request.method == 'POST' and 'add_note' in request.POST:
-        note_form = NoteForm(request.POST)
-        if note_form.is_valid():
-            Note.objects.create(
-                customer=customer,
-                text=note_form.cleaned_data['note']
-                )
-            return redirect('musteri:customer_detail', pk=customer.pk)
-        elif 'delete_note' in request.POST:  # Not silme işlemi
-            note_id = request.POST.get('delete_note')
-            Note.objects.filter(id=note_id, customer=customer).delete()
-            return redirect('musteri:customer_detail', pk=customer.pk)
-        else:
-            # Dosya yükleme işlemleri için
-            file_form = CustomerFileForm(request.POST, request.FILES)
-            if file_form.is_valid():
-                new_file = file_form.save(commit=False)
-                new_file.customer = customer
-                new_file.save()
-                return redirect('musteri:customer_detail', pk=customer.pk)
-    else:
-        note_form = NoteForm()  # Not ekleme formu
-        file_form = CustomerFileForm()  # Dosya yükleme formu
-
+    main_customer = get_object_or_404(Customer, pk=pk)
+    notes = Note.objects.filter(customer=main_customer).order_by('-created_at')
+    customer_files = CustomerFile.objects.filter(customer=main_customer)
+    basvuru_surecleri = BasvuruSureci.objects.filter(musteri=main_customer).order_by('-baslangic_tarihi')
+    contact_history = Communication.objects.filter(customer=main_customer).order_by('-date')
+    
+    # Doküman tipleri ve dokümanlar
+    dokuman_tipleri = DokumanTipi.objects.all()
+    dokumanlar = Dokuman.objects.filter(musteri=main_customer).order_by('-yuklenme_tarihi')
+    
+    # Ödemeler
+    payments = Payment.objects.filter(customer=main_customer).order_by('-date')
+    
+    # Tasks
+    tasks = Yapilacak.objects.filter(customer=main_customer).order_by('-created_at')
+    
     context = {
-        'main_customer': customer,
-        'same_customers': same_customers,
-        'communication_history': communication_history,
-        'notes': notes,  # Notları context'e ekle
-        'note_form': note_form,  # Not formunu context'e ekle
-        'file_form': file_form,  # Dosya yükleme formunu context'e ekle
-        'note_form': note_form,  # Formu her zaman context'e ekle
-
+        'main_customer': main_customer,
+        'notes': notes,
+        'customer_files': customer_files,
+        'basvuru_surecleri': basvuru_surecleri,
+        'contact_history': contact_history,
+        'dokuman_tipleri': dokuman_tipleri,
+        'dokumanlar': dokumanlar,
+        'payments': payments,
+        'tasks': tasks,
     }
-
+    
     return render(request, 'musteri/customer_detail.html', context)
 
 def delete_note(request, pk, note_id):
@@ -555,3 +799,162 @@ class FormView:
             # print('buda content:', captcha_image.streaming_content)
 
         return render(request, 'musteri/ikamet.html', {'form': form, 'captcha_image': captcha_image })
+
+# Calendar Views
+@login_required
+def calendar_view(request):
+    customers = Customer.objects.all()
+    return render(request, 'musteri/calendar.html', {'customers': customers})
+
+@login_required
+def calendar_events_view(request):
+    events = []
+    
+    # Add calendar events
+    calendar_events = CalendarEvent.objects.all()
+    for event in calendar_events:
+        events.append({
+            'title': event.title,
+            'start': event.start.isoformat(),
+            'end': event.end.isoformat() if event.end else None,
+            'description': event.description,
+            'color': event.color
+        })
+    
+    # Add tasks
+    tasks = Yapilacak.objects.filter(tamamlandi=False)
+    for task in tasks:
+        events.append({
+            'title': task.yapilacak,
+            'start': task.olusturulma_tarihi.isoformat(),
+            'color': '#dc3545'
+        })
+    
+    # Add document expiry dates
+    documents = CustomerFile.objects.filter(expiry_date__isnull=False)
+    for doc in documents:
+        events.append({
+            'title': f'Document Expiry: {doc.customer.name}',
+            'start': doc.expiry_date.isoformat(),
+            'color': '#ffc107'
+        })
+    
+    return JsonResponse(events, safe=False)
+
+@login_required
+def calendar_event_create_view(request):
+    if request.method == 'POST':
+        data = request.POST
+        customer_id = data.get('customer_id')
+        try:
+            customer = Customer.objects.get(id=customer_id) if customer_id else None
+            event = CalendarEvent.objects.create(
+                customer=customer,
+                title=data.get('title'),
+                description=data.get('description', ''),
+                start_time=data.get('start'),
+                end_time=data.get('end') if data.get('end') else data.get('start')
+            )
+            return JsonResponse({
+                'id': event.id,
+                'title': event.title,
+                'start': event.start_time.isoformat(),
+                'end': event.end_time.isoformat(),
+            })
+        except Customer.DoesNotExist:
+            return JsonResponse({'error': 'Müşteri bulunamadı'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+# Report Views
+def reports_view(request):
+    return render(request, 'musteri/reports.html')
+
+def customer_reports_view(request):
+    return render(request, 'musteri/customer_reports.html')
+
+def task_reports_view(request):
+    return render(request, 'musteri/task_reports.html')
+
+def expense_reports_view(request):
+    return render(request, 'musteri/expense_reports.html')
+
+# Expense Views
+def expense_view(request):
+    return render(request, 'musteri/expense.html')
+
+def expense_create_view(request):
+    return render(request, 'musteri/expense_create.html')
+
+def expense_edit_view(request, pk):
+    return render(request, 'musteri/expense_edit.html')
+
+def expense_delete_view(request, pk):
+    return render(request, 'musteri/expense_delete.html')
+
+# Customer Documents & Status Views
+def customer_documents_view(request):
+    return render(request, 'musteri/customer_documents.html')
+
+# Profile & Settings Views
+def profile_view(request):
+    return render(request, 'musteri/profile.html')
+
+def settings_view(request):
+    return render(request, 'musteri/settings.html')
+
+def notification_settings_view(request):
+    return render(request, 'musteri/notification_settings.html')
+
+# API Views
+def customer_search_api(request):
+    return JsonResponse({'status': 'ok'})
+
+def task_search_api(request):
+    return JsonResponse({'status': 'ok'})
+
+def dashboard_view(request):
+    context = {
+        'customer_count': Customer.objects.count(),
+        'task_count': Yapilacak.objects.filter(tamamlandi=False).count(),
+        'document_count': CustomerFile.objects.count(),
+        'expense_count': ExpenseItem.objects.count(),
+        'recent_customers': Customer.objects.order_by('-created_at')[:5],
+        'pending_tasks': Yapilacak.objects.filter(tamamlandi=False).order_by('-created_at')[:5],
+        'expiring_documents': CustomerFile.objects.filter(
+            expiry_date__isnull=False,
+            expiry_date__gte=timezone.now()
+        ).order_by('expiry_date')[:5]
+    }
+    return render(request, 'musteri/dashboard.html', context)
+
+@login_required
+def add_payment(request, customer_id):
+    customer = get_object_or_404(Customer, id=customer_id)
+    
+    if request.method == 'POST':
+        amount = request.POST.get('amount')
+        description = request.POST.get('description')
+        
+        if amount:
+            from decimal import Decimal
+            from datetime import datetime
+            amount_decimal = Decimal(amount)
+            
+            # Ödemeyi kaydet
+            Payment.objects.create(
+                customer=customer,
+                amount=amount_decimal,
+                description=description,
+                date=datetime.now()  # Şu anki tarihi ekle
+            )
+            
+            # Toplam ödemeyi güncelle
+            current_payment = customer.payment_made or Decimal('0')
+            customer.payment_made = current_payment + amount_decimal
+            customer.save()
+            
+            messages.success(request, f'{amount}₺ tutarında ödeme başarıyla eklendi.')
+        
+    return redirect('musteri:customer_detail', pk=customer_id)

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ musteri.get_full_name }} - Dokümanlar{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col">
+            <h2>{{ musteri.get_full_name }} - Dokümanlar</h2>
+            <div class="mb-3">
+                <a href="{% url 'dokuman:dokuman_yukle' musteri.id %}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Yeni Doküman Yükle
+                </a>
+            </div>
+            
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Doküman Tipi</th>
+                            <th>Durum</th>
+                            <th>Yüklenme Tarihi</th>
+                            <th>Son Güncelleme</th>
+                            <th>Geçerlilik Tarihi</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dokuman in dokumanlar %}
+                        <tr>
+                            <td>{{ dokuman.dokuman_tipi }}</td>
+                            <td>
+                                <span class="badge bg-{{ dokuman.get_durum_color }}">
+                                    {{ dokuman.get_durum_display }}
+                                </span>
+                            </td>
+                            <td>{{ dokuman.yuklenme_tarihi|date:"d.m.Y H:i" }}</td>
+                            <td>{{ dokuman.son_guncelleme|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                {% if dokuman.gecerlilik_tarihi %}
+                                    {{ dokuman.gecerlilik_tarihi|date:"d.m.Y" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ dokuman.dosya.url }}" class="btn btn-sm btn-info" target="_blank">
+                                        <i class="fas fa-download"></i> İndir
+                                    </a>
+                                    <a href="{% url 'dokuman:dokuman_guncelle' dokuman.id %}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i> Düzenle
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">Henüz doküman yüklenmemiş.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

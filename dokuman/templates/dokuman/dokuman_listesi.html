@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ musteri.ad_soyad }} - Dokümanlar</h2>
+        <a href="{% url 'dokuman:dokuman_yukle' musteri.id %}" class="btn btn-primary">
+            <i class="fas fa-upload"></i> Yeni Doküman Yükle
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-body">
+            {% if dokumanlar %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Doküman Tipi</th>
+                            <th>Durum</th>
+                            <th>Yüklenme Tarihi</th>
+                            <th>Son Güncelleme</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dokuman in dokumanlar %}
+                        <tr>
+                            <td>{{ dokuman.dokuman_tipi }}</td>
+                            <td>
+                                <span class="badge {% if dokuman.durum == 'ONAYLANDI' %}bg-success
+                                    {% elif dokuman.durum == 'REDDEDILDI' %}bg-danger
+                                    {% elif dokuman.durum == 'GUNCELLEME_GEREKLI' %}bg-warning
+                                    {% else %}bg-info{% endif %}">
+                                    {{ dokuman.get_durum_display }}
+                                </span>
+                            </td>
+                            <td>{{ dokuman.yuklenme_tarihi|date:"d.m.Y H:i" }}</td>
+                            <td>{{ dokuman.son_guncelleme|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <a href="{{ dokuman.dosya.url }}" class="btn btn-sm btn-info" target="_blank">
+                                    <i class="fas fa-eye"></i> Görüntüle
+                                </a>
+                                <a href="{% url 'dokuman:dokuman_guncelle' dokuman.id %}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i> Düzenle
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center">Henüz doküman yüklenmemiş.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

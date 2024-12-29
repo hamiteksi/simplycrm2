@@ -1,13 +1,187 @@
-<h2>Yapılacaklar Listesi</h2>
+{% extends "base.html" %}
+{% load static %}
 
-<form method="POST">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">+</button>
-</form>
+{% block title %}Tasks{% endblock %}
 
-<ul>
-    {% for yapilacak in yapilacaklar %}
-    <li>{{ yapilacak.yapilacak }} - {{ yapilacak.detay }}</li>
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
     {% endfor %}
-</ul>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header bg-white py-3">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0">Tasks</h5>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+                        <i class="fas fa-plus me-2"></i>New Task
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for task in tasks %}
+                <div class="list-group-item border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" {% if task.tamamlandi %}checked{% endif %}
+                                    onchange="completeTask({{ task.id }}, this)">
+                                <label class="form-check-label {% if task.tamamlandi %}text-decoration-line-through{% endif %}">
+                                    {{ task.baslik }}
+                                </label>
+                            </div>
+                            {% if task.aciklama %}
+                            <p class="mb-1 text-muted">{{ task.aciklama }}</p>
+                            {% endif %}
+                            <small class="text-muted">Due: {{ task.son_tarih|date:"Y-m-d H:i" }}</small>
+                            {% if task.customer %}
+                            <br>
+                            <small class="text-primary">
+                                <i class="fas fa-user me-1"></i>
+                                <a href="{% url 'musteri:customer_detail' task.customer.id %}" class="text-decoration-none">
+                                    {{ task.customer.get_full_name }}
+                                </a>
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="list-group-item border-0 py-5 text-center">
+                    <div class="text-muted">
+                        <i class="fas fa-tasks fa-3x mb-3"></i>
+                        <h6>No tasks found</h6>
+                        <p class="mb-0">Create a new task to get started</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addTaskForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Task Title</label>
+                        <input type="text" class="form-control" name="yapilacak" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Task Details</label>
+                        <textarea class="form-control" name="detay" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Related Customer</label>
+                        <select class="form-control select2" name="customer_id">
+                            <option value="">Select Customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.get_full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addTask()">Add Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    $('.select2').select2({
+        dropdownParent: $('#addTaskModal')
+    });
+});
+
+function addTask() {
+    var form = document.getElementById('addTaskForm');
+    var formData = new FormData(form);
+    
+    fetch('/tasks/add/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding the task');
+    });
+}
+
+function completeTask(taskId, checkbox) {
+    fetch(`/tasks/complete/${taskId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            var label = checkbox.nextElementSibling;
+            if (checkbox.checked) {
+                label.classList.add('text-decoration-line-through');
+            } else {
+                label.classList.remove('text-decoration-line-through');
+            }
+        } else {
+            checkbox.checked = !checkbox.checked;
+            alert('Failed to update task status');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        checkbox.checked = !checkbox.checked;
+        alert('An error occurred while updating task status');
+    });
+}
+
+// Auto-hide alerts after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        var alerts = document.getElementsByClassName('alert');
+        for (var i = 0; i < alerts.length; i++) {
+            alerts[i].style.display = 'none';
+        }
+    }, 5000);
+});
+</script>
+{% endblock %}

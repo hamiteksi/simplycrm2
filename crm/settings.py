@@ -23,14 +23,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-fzg*357w!v+6o$#1()77x$=251!@u38-dy#4)(37w*f6jfxth!'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-fzg*357w!v+6o$#1()77x$=251!@u38-dy#4)(37w*f6jfxth!')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['https://crmsimplytr-f0ecb2b4ea94.herokuapp.com/',
-                 'simplycrm-2b2e2652c4b9.herokuapp.com',
-                 '127.0.0.1',]
+ALLOWED_HOSTS = [
+    'crmsimplytr-f0ecb2b4ea94.herokuapp.com',
+    'simplycrm-2b2e2652c4b9.herokuapp.com',
+    '127.0.0.1',
+    'localhost',
+]
 
 
 # Application definition
@@ -42,10 +45,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'musteri',
-    'constance',
+    'musteri.apps.MusteriConfig',
+    'dokuman.apps.DokumanConfig',
+    'crispy_forms',
+    'crispy_bootstrap5',
     'django_tables2',
-
 ]
 
 MIDDLEWARE = [
@@ -85,35 +89,13 @@ WSGI_APPLICATION = 'crm.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'simplycrm',
-#         'USER': 'simplycrm',
-#         'PASSWORD': '11Etm1063@221',
-#         'HOST': '92.205.0.132',  # Yerel ortamda genellikle localhost kullanılır
-#         'PORT': '3306',
-#     }
-# }
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-    # 'default': dj_database_url.config(default='sqlite:///db.sqlite3')
+    'default': dj_database_url.config(
+        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
+        conn_max_age=600
+    )
 }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'django',
-#         'USER': 'root',
-#         'PASSWORD': 'kahraman',
-#         'HOST': 'localhost',
-#         'PORT': '3306',
-#     }
-# }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -148,21 +130,36 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.1/howto/static-files/
-
-# STATIC_ROOT, `collectstatic` komutu ile toplanacak statik dosyaların saklanacağı yerdir.
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
+    os.path.join(BASE_DIR, 'static'),
 ]
-STATIC_URL = "/static/"
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# During development, use the default static files storage
+if DEBUG:
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+else:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Login settings
+# Login gerektirmeyen URL'ler
+LOGIN_EXEMPT_URLS = [
+    '/admin/',
+    '/login/',
+    '/logout/',
+    '/static/',
+    '/media/',
+]
 
-
+# Login URL'i
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/login/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -171,10 +168,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-
 
 CACHES = {
     'default': {
@@ -195,22 +188,5 @@ LOGGING = {
         'level': 'DEBUG',
     },
 }
-
-# settings.py
-LOGIN_URL = 'login'
-
-LOGIN_EXEMPT_URLS = [
-    '/login/',  # Giriş URL'si
-    # İstisna olmasını istediğiniz diğer URL'ler
-]
-
-# settings.py
-
-LOGIN_REDIRECT_URL = '/musteri/customers/'
-
-
-
-# Kullanıcı çıkış yaptıktan sonra ana sayfaya yönlendir
-LOGOUT_REDIRECT_URL = '/'
 
 DATE_FORMAT = 'd/m/Y'

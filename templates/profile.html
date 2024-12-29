@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-xl-4">
+            <!-- Profile Card -->
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <img src="{% static 'images/avatar.png' %}" alt="Profile Picture" 
+                             class="rounded-circle img-fluid" style="width: 150px;">
+                    </div>
+                    <h5 class="mb-1">{{ user.get_full_name }}</h5>
+                    <p class="text-muted mb-3">{{ user.email }}</p>
+                    <div class="d-flex justify-content-center mb-2">
+                        <button type="button" class="btn btn-primary me-1">Edit Profile</button>
+                        <button type="button" class="btn btn-outline-primary ms-1">Message</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Contact Information</h5>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-3">
+                            <i class="fas fa-envelope me-2 text-muted"></i>
+                            {{ user.email }}
+                        </li>
+                        <li class="mb-3">
+                            <i class="fas fa-phone me-2 text-muted"></i>
+                            +1 234 567 89
+                        </li>
+                        <li>
+                            <i class="fas fa-map-marker-alt me-2 text-muted"></i>
+                            New York, USA
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8">
+            <!-- About -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">About</h5>
+                    <p class="text-muted">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Activity</h5>
+                    <div class="timeline">
+                        <div class="timeline-item pb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="timeline-icon bg-primary-subtle text-primary rounded-circle">
+                                        <i class="fas fa-user-plus"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Added new customer</h6>
+                                    <p class="text-muted mb-0">2 hours ago</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timeline-item pb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="timeline-icon bg-success-subtle text-success rounded-circle">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Completed task</h6>
+                                    <p class="text-muted mb-0">1 day ago</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="timeline-icon bg-info-subtle text-info rounded-circle">
+                                        <i class="fas fa-comment"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Added new comment</h6>
+                                    <p class="text-muted mb-0">3 days ago</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Statistics</h5>
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 class="mb-2">150</h3>
+                                <p class="text-muted mb-0">Customers Added</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 class="mb-2">85%</h3>
+                                <p class="text-muted mb-0">Task Completion</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h3 class="mb-2">24</h3>
+                                <p class="text-muted mb-0">Active Projects</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,108 +3,135 @@
     <!-- Sidebar Toggle Button
     <button class="btn sidebar-toggle" type="button">
         <span class="toggle-icon">&lt;</span>
-    </button> -->
+    </button>
+    -->
+    {% load static %}
 
-    <!-- Sidebar Content -->
-    <!-- <div class="sidebar-content d-flex flex-column flex-shrink-0 p-3 bg-light" style="width: 280px;"> -->
-    <hr>
-    <ul class="nav nav-pills flex-column mb-auto">
-        <li class="nav-item">
-            <a href="{% url 'musteri:customer_list' %}" class="nav-link active" aria-current="page">
-                <svg class="bi me-2" width="16" height="16">
-                    <use xlink:href="#home"></use>
-                </svg>
-                Home
+    {% load static %}
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <!-- User Profile -->
+        <div class="d-flex align-items-center mb-4 px-3">
+            <i class="fas fa-user-circle fs-1 me-3 text-primary"></i>
+            <div>
+                <h6 class="mb-0">{{ request.user.get_full_name }}</h6>
+                <small class="text-muted">{{ request.user.email }}</small>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="px-3 mb-4">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="fas fa-search text-muted"></i>
+                </span>
+                <input type="text" class="form-control border-start-0" placeholder="Search...">
+            </div>
+        </div>
+
+        <!-- Main Navigation -->
+        <nav class="nav flex-column">
+            <a href="{% url 'musteri:dashboard' %}" class="sidebar-link {% if request.path == '/' %}active{% endif %}">
+                <i class="fas fa-home"></i>
+                Dashboard
             </a>
-        </li>
-        <li>
-            <a href="{% url 'musteri:customer_create' %}" class="nav-link link-dark">
-                <svg class="bi me-2" width="16" height="16">
-                    <use xlink:href="#plus-circle"></use>
-                </svg>
-                Yeni Musteri
+            <a href="{% url 'musteri:customer_list' %}" class="sidebar-link {% if 'customer' in request.path %}active{% endif %}">
+                <i class="fas fa-users"></i>
+                Müşteriler
             </a>
-        </li>
-        <li>
-            <a href="{% url 'musteri:upload_pdf' %}" class="nav-link link-dark">
-                <svg class="bi me-2" width="16" height="16">
-                    <use xlink:href="#file-earmark-arrow-up"></use>
-                </svg>
-                Yeni Musteri - Dosyadan Yukle
+            <a href="{% url 'musteri:calendar' %}" class="sidebar-link {% if 'calendar' in request.path %}active{% endif %}">
+                <i class="fas fa-calendar"></i>
+                Takvim
             </a>
-        </li>
-        <li>
-            <a href="{% url 'musteri:customer_query' %}" class="nav-link link-dark">
-                <svg class="bi me-2" width="16" height="16">
-                    <use xlink:href="#search"></use>
-                </svg>
-                Sorgula
+            <a href="{% url 'musteri:yapilacak' %}" class="sidebar-link {% if 'tasks' in request.path %}active{% endif %}">
+                <i class="fas fa-tasks"></i>
+                Yapılacaklar
             </a>
-        </li>
-        <li>
-            <a href="{% url 'musteri:customer_expiry_list' %}" class="nav-link link-dark">
-                <svg class="bi me-2" width="16" height="16">
-                    <use xlink:href="#alarm-exclamation"></use>
-                </svg>
-                Ikameti Sona Erenler
+            <a href="{% url 'musteri:reports' %}" class="sidebar-link {% if 'reports' in request.path %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i>
+                Raporlar
             </a>
-        </li>
-        <li>
-            <a href="{% url 'musteri:expense' %}" class="nav-link link-dark">
-                <svg class="bi me-2" width="16" height="16">
-                    <use xlink:href="#alarm-exclamation"></use>
-                </svg>
-                Masraf Hesapla
-            </a>
-        </li>
-        <li>
-            <a href="{% url 'musteri:yapilacak' %}" class="nav-link link-dark">
-                <svg class="bi me-2" width="16" height="16">
-                    <use xlink:href="#alarm-exclamation"></use>
-                </svg>
-                Yapilacak Listesi
-            </a>
-        </li>
-    </ul>
-    <hr>
-    <div class="dropdown">
-        <a href="#" class="d-flex align-items-center link-dark text-decoration-none dropdown-toggle" id="dropdownUser2"
-            data-bs-toggle="dropdown" aria-expanded="false">
-            <img src="https://github.com/mdo.png" alt="" width="32" height="32" class="rounded-circle me-2">
-            <strong>Hamit</strong>
-        </a>
-        <ul class="dropdown-menu text-small shadow" aria-labelledby="dropdownUser2">
-            <li><a class="dropdown-item" href="#">New project...</a></li>
-            <li><a class="dropdown-item" href="#">Settings</a></li>
-            <li><a class="dropdown-item" href="#">Profile</a></li>
-            <li>
-                <hr class="dropdown-divider">
-            </li>
-            {% if user.is_authenticated %}
-            <form action="{% url 'logout' %}" method="post" class="form-inline my-2 my-lg-0">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger my-2 my-sm-0">Çıkış Yap</button>
-            </form>
-            {% endif %}
-        </ul>
+        </nav>
+
+        <!-- Quick Actions -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Hızlı İşlemler</div>
+            <nav class="nav flex-column">
+                <a href="{% url 'musteri:customer_create' %}" class="sidebar-link">
+                    <i class="fas fa-user-plus"></i>
+                    Yeni Müşteri
+                </a>
+                <a href="{% url 'musteri:add_yapilacak' %}" class="sidebar-link">
+                    <i class="fas fa-plus"></i>
+                    Yeni Görev
+                </a>
+                <a href="#" class="sidebar-link" data-bs-toggle="modal" data-bs-target="#addEventModal">
+                    <i class="fas fa-calendar-plus"></i>
+                    Yeni Etkinlik
+                </a>
+            </nav>
+        </div>
+
+        <!-- Monitoring -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Takip</div>
+            <nav class="nav flex-column">
+                <a href="{% url 'musteri:customer_expiry_list' %}" class="sidebar-link">
+                    <i class="fas fa-clock"></i>
+                    Süresi Dolan Belgeler
+                </a>
+                <a href="{% url 'musteri:customer_status_list' %}" class="sidebar-link">
+                    <i class="fas fa-list"></i>
+                    Durum Listesi
+                </a>
+            </nav>
+        </div>
+
+        <!-- Settings -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Ayarlar</div>
+            <nav class="nav flex-column">
+                <a href="{% url 'musteri:profile' %}" class="sidebar-link">
+                    <i class="fas fa-user-cog"></i>
+                    Profil
+                </a>
+                <a href="{% url 'musteri:settings' %}" class="sidebar-link">
+                    <i class="fas fa-cog"></i>
+                    Sistem Ayarları
+                </a>
+                <a href="{% url 'logout' %}" class="sidebar-link text-danger">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Çıkış Yap
+                </a>
+            </nav>
+        </div>
     </div>
 
-    <!-- </div> -->
+    <!-- Mobile Toggle Button -->
+    <button class="btn btn-primary position-fixed d-md-none" 
+            style="bottom: 1rem; right: 1rem; z-index: 1050;"
+            onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <script>
+    function toggleSidebar() {
+        document.querySelector('.sidebar').classList.toggle('show');
+    }
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', function(event) {
+        const sidebar = document.querySelector('.sidebar');
+        const toggleBtn = document.querySelector('.btn-primary.position-fixed');
+        
+        if (window.innerWidth <= 768) {
+            if (!sidebar.contains(event.target) && !toggleBtn.contains(event.target)) {
+                sidebar.classList.remove('show');
+            }
+        }
+    });
+    </script>
+
     <!-- Main Content -->
 </div>
-
-<script>
-    $(document).ready(function () {
-        $('.sidebar-toggle').click(function () {
-            // Sidebar içeriğini aç/kapa
-            $('.sidebar-content').toggleClass('active');
-
-            // Buton simgesini güncelle
-            if ($('.sidebar-content').hasClass('active')) {
-                $('.toggle-icon').html('&gt;'); // Sidebar açıksa ">" simgesini göster
-            } else {
-                $('.toggle-icon').html('&lt;'); // Sidebar kapalıysa "<" simgesini göster
-            }
-        });
-    });
-</script>

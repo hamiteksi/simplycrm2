@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-4 col-sm-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Total Customers</h6>
+                            <h4 class="mb-0">{{ total_customers }}</h4>
+                        </div>
+                        <div class="avatar avatar-lg rounded-circle bg-primary">
+                            <i class="fas fa-users text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-sm-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Completed Tasks</h6>
+                            <h4 class="mb-0">{{ completed_tasks }}</h4>
+                        </div>
+                        <div class="avatar avatar-lg rounded-circle bg-success">
+                            <i class="fas fa-check text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-sm-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Pending Tasks</h6>
+                            <h4 class="mb-0">{{ pending_tasks }}</h4>
+                        </div>
+                        <div class="avatar avatar-lg rounded-circle bg-warning">
+                            <i class="fas fa-clock text-white"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Customer Growth Chart -->
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Customer Growth</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="customerGrowth" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task Distribution -->
+        <div class="col-xl-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Task Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="taskDistribution" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Customer Table -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Monthly Customer Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th>New Customers</th>
+                                    <th>Growth Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in monthly_customers %}
+                                <tr>
+                                    <td>{{ stat.month|date:"F Y" }}</td>
+                                    <td>{{ stat.count }}</td>
+                                    <td>
+                                        {% if forloop.counter0 < monthly_customers|length|add:"-1" %}
+                                            {% with prev=monthly_customers|slice:forloop.counter0|first %}
+                                                {% if prev.count > 0 %}
+                                                    {% widthratio stat.count|sub:prev.count prev.count 100 %}%
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            {% endwith %}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Customer Growth Chart
+    var growthCtx = document.getElementById('customerGrowth').getContext('2d');
+    var customerGrowth = new Chart(growthCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for stat in monthly_customers %}'{{ stat.month|date:"M Y" }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'New Customers',
+                data: [{% for stat in monthly_customers %}{{ stat.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Task Distribution Chart
+    var taskCtx = document.getElementById('taskDistribution').getContext('2d');
+    var taskDistribution = new Chart(taskCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'Pending'],
+            datasets: [{
+                data: [{{ completed_tasks }}, {{ pending_tasks }}],
+                backgroundColor: [
+                    'rgb(75, 192, 192)',
+                    'rgb(255, 205, 86)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

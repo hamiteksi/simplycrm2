@@ -1,12 +1,14 @@
 from django import forms
-from .models import Customer,Expense, ExpenseItem, Country, InsuranceAgeBracket, CustomerFile, Yapilacak, Note
+from django.forms import ModelForm, DateInput
+from .models import Customer, CustomerFile, Note, Communication, Yapilacak, CalendarEvent, ExpenseItem, Payment, Expense, Country, InsuranceAgeBracket
 
-
-class YapilacakForm(forms.ModelForm):
+class CustomerForm(forms.ModelForm):
     class Meta:
-        model = Yapilacak
-        fields = ['yapilacak', 'detay']
-
+        model = Customer
+        fields = ['first_name', 'last_name', 'email', 'phone', 'address', 'customer_notes']
+        widgets = {
+            'customer_notes': forms.Textarea(attrs={'rows': 3}),
+        }
 
 class CustomerFileForm(forms.ModelForm):
     class Meta:
@@ -16,39 +18,60 @@ class CustomerFileForm(forms.ModelForm):
 class NoteForm(forms.ModelForm):
     class Meta:
         model = Note
-        fields = ['text']
-
-class CustomerForm(forms.ModelForm):
-    class Meta:
-        model = Customer
-        # Eğer 'notes' alanını kaldırdıysanız, fields listesinden de çıkarmalısınız.
-        fields = ['first_name', 'last_name', 'identity_number', 'nationality', 'date_of_birth',
-                  'marital_status', 'passport_number', 'issuing_authority', 'passport_date',
-                  'application_type', 'residence_type', 'residence_permit_start_date',
-                  'residence_permit_end_date', 'passport_info', 'service_type', 'ptt_code',
-                  'phone_number', 'payment_made', 'communication_history', 'application_number',
-                  'mail', 'status']
+        fields = ['content']
         widgets = {
-            'residence_permit_start_date': forms.DateInput(attrs={'type': 'date'}),
-            'residence_permit_end_date': forms.DateInput(attrs={'type': 'date'}),
+            'content': forms.Textarea(attrs={'rows': 3}),
         }
 
+class CommunicationForm(forms.ModelForm):
+    class Meta:
+        model = Communication
+        fields = ['type', 'description', 'date']
+        widgets = {
+            'date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+
+class YapilacakForm(forms.ModelForm):
+    class Meta:
+        model = Yapilacak
+        fields = ['baslik', 'aciklama', 'son_tarih', 'tamamlandi']
+        widgets = {
+            'son_tarih': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'aciklama': forms.Textarea(attrs={'rows': 3}),
+        }
+
+class CalendarEventForm(forms.ModelForm):
+    class Meta:
+        model = CalendarEvent
+        fields = ['title', 'description', 'start_time', 'end_time']
+        widgets = {
+            'start_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'end_time': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+
+class ExpenseItemForm(forms.ModelForm):
+    class Meta:
+        model = ExpenseItem
+        fields = ['description', 'amount', 'date']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+class PaymentForm(forms.ModelForm):
+    class Meta:
+        model = Payment
+        fields = ['amount', 'description', 'date']
+        widgets = {
+            'date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
 
 class CustomerQueryForm(forms.Form):
-    application_number = forms.CharField(label='Başvuru Numarası')
-    phone_number = forms.CharField(label='Telefon Numarası')
-
-
-
-class BasvuruForm(forms.Form):
-    basvuru_no = forms.CharField(label='Başvuru No', max_length=100)
-    email_or_phone = forms.CharField(label='Email ya da Telefon', max_length=100)
-    yabanci_kimlik_no = forms.CharField(label='Yabancı Kimlik No ya da Pasaport No', max_length=100)
-    captcha_input = forms.CharField(label='CAPTCHA Girişi', max_length=100)
-    captchaDeText = forms.CharField(label='captchaDeText', max_length=100)
-    pasaport =  forms.CharField(label='pasaport', max_length=100)
-    telefon = forms.CharField(label='telefon', max_length=100)
-
+    search = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ara...'}))
+    start_date = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
+    end_date = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
 
 class ExpenseForm(forms.ModelForm):
     class Meta:
