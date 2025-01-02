@@ -1,21 +1,14 @@
-from django.contrib.auth.models import User
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'simplycrm.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'crm.settings')
 django.setup()
 
-# Superuser oluştur
-username = 'admin'
-email = 'admin@example.com'
-password = 'admin123'
+from django.contrib.auth.models import User
 
-try:
-    superuser = User.objects.create_superuser(
-        username=username,
-        email=email,
-        password=password,
-    )
-    print(f"Superuser başarıyla oluşturuldu: {username}")
-except Exception as e:
-    print(f"Hata: {e}")
+def create_superuser():
+    if not User.objects.filter(username='admin').exists():
+        User.objects.create_superuser('admin', 'admin@example.com', 'Admin123!')
+        print("Superuser created successfully!")
+    else:
+        print("Superuser already exists.")
