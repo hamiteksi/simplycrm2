@@ -33,6 +33,15 @@ class Customer(models.Model):
     phone = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     customer_notes = models.TextField(blank=True, null=True)
+    father_name = models.CharField(max_length=100, blank=True, null=True)
+    mother_name = models.CharField(max_length=100, blank=True, null=True)
+    job = models.CharField(max_length=100, blank=True, null=True)
+    company = models.CharField(max_length=100, blank=True, null=True)
+    income = models.CharField(max_length=100, blank=True, null=True)
+    income_source = models.CharField(max_length=100, blank=True, null=True)
+    insurance_type = models.CharField(max_length=100, blank=True, null=True)
+    gender = models.CharField(max_length=100, blank=True, null=True)
+    appointment_place = models.CharField(max_length=100, blank=True, null=True)
     
     # Kimlik bilgileri
     identity_number = models.CharField(max_length=20, blank=True, null=True)
@@ -45,6 +54,7 @@ class Customer(models.Model):
     issuing_authority = models.CharField(max_length=100, blank=True, null=True)
     passport_date = models.DateField(null=True, blank=True)
     passport_info = models.TextField(blank=True, null=True)
+    passport_type = models.CharField(max_length=100, blank=True, null=True)
     
     # Başvuru bilgileri
     application_type = models.CharField(max_length=50, blank=True, null=True)
@@ -54,6 +64,13 @@ class Customer(models.Model):
     service_type = models.CharField(max_length=50, blank=True, null=True)
     ptt_code = models.CharField(max_length=100, blank=True, null=True)
     application_number = models.CharField(max_length=100, blank=True, null=True)
+    application_date = models.DateField(
+        verbose_name='Başvuru Tarihi',
+        null=True,  # Eski kayıtlar için null izin ver
+        blank=True,  # Eski kayıtlar için boş izin ver
+        default=None,  # Varsayılan değer yok
+        help_text='Müşterinin başvuru tarihi'
+    )
     
     # Ödeme bilgileri
     payment_made = models.DecimalField(max_digits=10, decimal_places=2, default=0)

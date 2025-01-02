@@ -1,58 +1,55 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
+{% load static %}
 
-<head>
-    <title>Expiring Residence Permits</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-</head>
+{% block title %}Süresi Dolan Belgeler{% endblock %}
 
-<body>
-    <div class="card-footer">
-        <a href="{% url 'musteri:customer_list' %}" class="btn btn-primary">Musteri Listesine
-            Don </a>
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Süresi Dolan Belgeler</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Müşteri Adı</th>
+                                    <th>Soyadı</th>
+                                    <th>İkamet İzni Bitiş Tarihi</th>
+                                    <th>Kalan Gün</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for customer in customers %}
+                                <tr>
+                                    <td>{{ customer.first_name }}</td>
+                                    <td>{{ customer.last_name }}</td>
+                                    <td>{{ customer.residence_permit_end_date }}</td>
+                                    <td>{{ customer.residence_permit_end_date|timeuntil }}</td>
+                                    <td>
+                                        <a href="{% url 'musteri:customer_detail' customer.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'musteri:customer_edit' customer.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">Süresi dolan belge bulunamadı.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="container mt-4">
-        <a href="#" class="btn btn-primary mb-4">Download Excel</a>
-
-        <h1 class="text-center">Expiring Residence Permits</h1>
-
-        <table class="table mt-4">
-            <thead>
-                <tr>
-                    <th scope="col">First Name</th>
-                    <th scope="col">Last Name</th>
-                    <th scope="col">Expiry Date</th>
-                    <th scope="col">Contact</th> <!-- Yeni sütun -->
-                    <th scope="col">Incele</th> <!-- Yeni sütun -->
-
-                </tr>
-            </thead>
-            <tbody>
-                {% for customer in customers|dictsort:"residence_permit_end_date" %}
-                <tr>
-                    <td>{{ customer.first_name }}</td>
-                    <td>{{ customer.last_name }}</td>
-                    <td>{{ customer.residence_permit_end_date }}</td>
-                    <td>
-                        {% if customer.phone_number and customer.phone_number != 'nan' %}
-                        <!-- WhatsApp bağlantısını oluştur -->
-                        <a href="https://wa.me/+90{{ customer.phone_number }}" class="btn btn-primary">WhatsApp ile
-                            İletişime Geç</a>
-                        {% else %}
-                        Telefon numarası yok
-                        {% endif %}
-
-                    </td>
-                    <td>
-                        <!-- İncele butonunu oluştur -->
-                        <a class="btn btn-success btn-sm"
-                            href="{% url 'musteri:customer_detail' customer.pk %}">İncele</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</body>
-
-</html>
+</div>
+{% endblock %}

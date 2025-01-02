@@ -1,112 +1,48 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Profile{% endblock %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item active">Profile</li>
-{% endblock %}
+{% block title %}Profil{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-4">
-        <!-- Profile Card -->
-        <div class="card">
-            <div class="card-body text-center">
-                <div class="mb-4">
-                    <i class="fas fa-user-circle display-1 text-primary"></i>
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Profil Bilgileri</h5>
                 </div>
-                <h5 class="mb-1">{{ request.user.get_full_name }}</h5>
-                <p class="text-muted mb-3">{{ request.user.email }}</p>
-                <div class="d-grid">
-                    <button class="btn btn-outline-primary">
-                        <i class="fas fa-camera me-2"></i>Change Photo
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contact Info -->
-        <div class="card mt-4">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0">Contact Information</h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="small text-muted">Email</label>
-                    <div>{{ request.user.email }}</div>
-                </div>
-                <div class="mb-3">
-                    <label class="small text-muted">Phone</label>
-                    <div>+1 (555) 123-4567</div>
-                </div>
-                <div>
-                    <label class="small text-muted">Location</label>
-                    <div>San Francisco, CA</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-8">
-        <!-- Edit Profile -->
-        <div class="card">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0">Edit Profile</h5>
-            </div>
-            <div class="card-body">
-                <form>
-                    <div class="row mb-3">
+                <div class="card-body">
+                    <div class="row">
                         <div class="col-md-6">
-                            <label class="form-label">First Name</label>
-                            <input type="text" class="form-control" value="{{ request.user.first_name }}">
+                            <div class="mb-3">
+                                <label class="form-label">Kullanıcı Adı</label>
+                                <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Ad</label>
+                                <input type="text" class="form-control" value="{{ user.first_name }}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Soyad</label>
+                                <input type="text" class="form-control" value="{{ user.last_name }}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">E-posta</label>
+                                <input type="email" class="form-control" value="{{ user.email }}" readonly>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Last Name</label>
-                            <input type="text" class="form-control" value="{{ request.user.last_name }}">
+                            <div class="mb-3">
+                                <label class="form-label">Son Giriş</label>
+                                <input type="text" class="form-control" value="{{ user.last_login|date:'d.m.Y H:i' }}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Kayıt Tarihi</label>
+                                <input type="text" class="form-control" value="{{ user.date_joined|date:'d.m.Y' }}" readonly>
+                            </div>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" value="{{ request.user.email }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Phone</label>
-                        <input type="tel" class="form-control" value="+1 (555) 123-4567">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Location</label>
-                        <input type="text" class="form-control" value="San Francisco, CA">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Bio</label>
-                        <textarea class="form-control" rows="3"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Security Settings -->
-        <div class="card mt-4">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0">Security Settings</h5>
-            </div>
-            <div class="card-body">
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label">Current Password</label>
-                        <input type="password" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">New Password</label>
-                        <input type="password" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Confirm New Password</label>
-                        <input type="password" class="form-control">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Update Password</button>
-                </form>
+                </div>
             </div>
         </div>
     </div>

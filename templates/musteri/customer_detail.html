@@ -424,6 +424,53 @@
 
     <!-- Sağ Kolon - Notlar ve İletişim -->
     <div class="col-lg-4">
+        <!-- Etkinlikler -->
+        <div class="card mb-4" id="etkinlikler">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar text-primary me-2"></i>
+                    Etkinlikler
+                </h5>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEventModal">
+                    <i class="fas fa-plus me-1"></i>
+                    Etkinlik Ekle
+                </button>
+            </div>
+            <div class="card-body">
+                {% if calendar_events %}
+                <div class="events-list">
+                    {% for event in calendar_events %}
+                    <div class="event-item mb-3 p-3 bg-light rounded">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">{{ event.title }}</h6>
+                            <div>
+                                <button class="btn btn-sm btn-warning me-1" onclick="editEvent({{ event.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteEvent({{ event.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-muted small mb-2">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ event.start_time|date:"d.m.Y H:i" }}
+                            {% if event.end_time %}
+                            - {{ event.end_time|date:"d.m.Y H:i" }}
+                            {% endif %}
+                        </div>
+                        {% if event.description %}
+                        <p class="mb-0 small">{{ event.description }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center my-4">Henüz etkinlik eklenmemiş.</p>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Notlar -->
         <div class="card mb-4" id="notlar">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
@@ -544,6 +591,82 @@
     </div>
 </div>
 
+<!-- Etkinlik Düzenleme Modal -->
+<div class="modal fade" id="editEventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Etkinlik Düzenle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editEventForm">
+                {% csrf_token %}
+                <input type="hidden" name="event_id" id="edit_event_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Etkinlik Başlığı</label>
+                        <input type="text" class="form-control" name="title" id="edit_event_title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Başlangıç Tarihi</label>
+                        <input type="datetime-local" class="form-control" name="start" id="edit_event_start" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bitiş Tarihi</label>
+                        <input type="datetime-local" class="form-control" name="end" id="edit_event_end">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea class="form-control" name="description" id="edit_event_description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Etkinlik Ekleme Modal -->
+<div class="modal fade" id="addEventModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Etkinlik Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addEventForm">
+                {% csrf_token %}
+                <input type="hidden" name="customer_id" value="{{ main_customer.id }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Etkinlik Başlığı</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Başlangıç Tarihi</label>
+                        <input type="datetime-local" class="form-control" name="start" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bitiş Tarihi</label>
+                        <input type="datetime-local" class="form-control" name="end">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -587,6 +710,100 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         document.querySelector(this.getAttribute('href')).scrollIntoView({
             behavior: 'smooth'
         });
+    });
+});
+
+// Etkinlik silme fonksiyonu
+function deleteEvent(eventId) {
+    if (confirm('Bu etkinliği silmek istediğinizden emin misiniz?')) {
+        fetch(`{% url "musteri:calendar_event_delete" event_id=0 %}`.replace('0', eventId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Etkinlik silinirken bir hata oluştu');
+            }
+        });
+    }
+}
+
+// Etkinlik düzenleme fonksiyonu
+function editEvent(eventId) {
+    fetch(`{% url "musteri:calendar_event_detail" event_id=0 %}`.replace('0', eventId), {
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('edit_event_id').value = data.id;
+        document.getElementById('edit_event_title').value = data.title;
+        document.getElementById('edit_event_start').value = data.start.slice(0, 16);
+        if (data.end) {
+            document.getElementById('edit_event_end').value = data.end.slice(0, 16);
+        }
+        document.getElementById('edit_event_description').value = data.description || '';
+        
+        new bootstrap.Modal(document.getElementById('editEventModal')).show();
+    });
+}
+
+// Etkinlik düzenleme formunu gönderme
+document.getElementById('editEventForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const eventId = formData.get('event_id');
+    
+    fetch(`{% url "musteri:calendar_event_update" event_id=0 %}`.replace('0', eventId), {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Hata:', error);
+        alert('Etkinlik güncellenirken bir hata oluştu');
+    });
+});
+
+// Etkinlik ekleme formunu gönderme
+document.getElementById('addEventForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "musteri:calendar_event_create" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Hata:', error);
+        alert('Etkinlik eklenirken bir hata oluştu');
     });
 });
 </script>

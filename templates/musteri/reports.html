@@ -1,180 +1,49 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Reports{% endblock %}
+{% block title %}Raporlar{% endblock %}
 
 {% block content %}
-<div class="row g-4">
-    <!-- Customer Reports -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-white py-3">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h5 class="mb-0">Customer Reports</h5>
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Raporlar</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Müşteri Raporları</h5>
+                                    <p class="card-text">Müşteri istatistikleri ve analizleri</p>
+                                    <a href="{% url 'musteri:customer_reports' %}" class="btn btn-primary">Görüntüle</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Görev Raporları</h5>
+                                    <p class="card-text">Görev takibi ve tamamlanma oranları</p>
+                                    <a href="{% url 'musteri:task_reports' %}" class="btn btn-primary">Görüntüle</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Gider Raporları</h5>
+                                    <p class="card-text">Gider takibi ve analizi</p>
+                                    <a href="{% url 'musteri:expense_reports' %}" class="btn btn-primary">Görüntüle</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-auto">
-                        <a href="{% url 'musteri:customer_reports' %}" class="btn btn-sm btn-primary">View Details</a>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <h6 class="text-muted mb-2">Total Customers</h6>
-                    <h2 class="mb-0">{{ customer_count }}</h2>
-                </div>
-                <div class="mb-4">
-                    <canvas id="customerChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Task Reports -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-white py-3">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h5 class="mb-0">Task Reports</h5>
-                    </div>
-                    <div class="col-auto">
-                        <a href="{% url 'musteri:task_reports' %}" class="btn btn-sm btn-primary">View Details</a>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <h6 class="text-muted mb-2">Pending Tasks</h6>
-                    <h2 class="mb-0">{{ task_count }}</h2>
-                </div>
-                <div class="mb-4">
-                    <canvas id="taskChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Expense Reports -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-white py-3">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h5 class="mb-0">Expense Reports</h5>
-                    </div>
-                    <div class="col-auto">
-                        <a href="{% url 'musteri:expense_reports' %}" class="btn btn-sm btn-primary">View Details</a>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <h6 class="text-muted mb-2">Total Expenses</h6>
-                    <h2 class="mb-0">{{ expense_total }}</h2>
-                </div>
-                <div class="mb-4">
-                    <canvas id="expenseChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Document Reports -->
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header bg-white py-3">
-                <div class="row align-items-center">
-                    <div class="col">
-                        <h5 class="mb-0">Document Reports</h5>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <h6 class="text-muted mb-2">Total Documents</h6>
-                    <h2 class="mb-0">{{ document_count }}</h2>
-                </div>
-                <div class="mb-4">
-                    <canvas id="documentChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-// Customer Chart
-var customerCtx = document.getElementById('customerChart').getContext('2d');
-new Chart(customerCtx, {
-    type: 'line',
-    data: {
-        labels: {{ customer_labels|safe }},
-        datasets: [{
-            label: 'New Customers',
-            data: {{ customer_data }},
-            borderColor: '#0d6efd',
-            tension: 0.1
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false
-    }
-});
-
-// Task Chart
-var taskCtx = document.getElementById('taskChart').getContext('2d');
-new Chart(taskCtx, {
-    type: 'doughnut',
-    data: {
-        labels: ['Completed', 'Pending'],
-        datasets: [{
-            data: [{{ completed_tasks }}, {{ pending_tasks }}],
-            backgroundColor: ['#198754', '#dc3545']
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false
-    }
-});
-
-// Expense Chart
-var expenseCtx = document.getElementById('expenseChart').getContext('2d');
-new Chart(expenseCtx, {
-    type: 'bar',
-    data: {
-        labels: {{ expense_labels|safe }},
-        datasets: [{
-            label: 'Expenses',
-            data: {{ expense_data }},
-            backgroundColor: '#0d6efd'
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false
-    }
-});
-
-// Document Chart
-var documentCtx = document.getElementById('documentChart').getContext('2d');
-new Chart(documentCtx, {
-    type: 'pie',
-    data: {
-        labels: ['Valid', 'Expiring Soon', 'Expired'],
-        datasets: [{
-            data: [{{ valid_documents }}, {{ expiring_documents }}, {{ expired_documents }}],
-            backgroundColor: ['#198754', '#ffc107', '#dc3545']
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false
-    }
-});
-</script>
 {% endblock %}

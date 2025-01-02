@@ -1,63 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
+{% load static %}
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{% endblock %} | SimplyCRM</title>
+    <title>{% block title %}Simply CRM{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- FullCalendar -->
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
     <!-- Custom CSS -->
-    {% load static %}
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+    
+    <style>
+        /* Navbar altına padding */
+        main {
+            padding-top: 70px;
+        }
+        
+        /* Tablo container'ı için özel stil */
+        .table-container {
+            max-width: 100%;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        
+        /* Tablo başlıklarını sabitlemek için */
+        .table thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 1;
+        }
+        
+        /* Tablo hücrelerinin içeriğini sığdırmak için */
+        .table td, .table th {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        
+        /* Responsive tasarım için */
+        @media (max-width: 768px) {
+            .table td, .table th {
+                font-size: 0.875rem;
+                padding: 0.5rem;
+            }
+            
+            .btn-group .btn {
+                padding: 0.25rem 0.5rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <!-- Navbar -->
     {% include "navbar.html" %}
-
-    <div class="wrapper">
-        <!-- Sidebar -->
-        {% include "sidebar.html" %}
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Breadcrumb -->
-            {% if not hide_breadcrumb %}
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'musteri:dashboard' %}">Home</a></li>
-                    {% block breadcrumb %}{% endblock %}
-                </ol>
-            </nav>
-            {% endif %}
-
-            <!-- Page Actions -->
-            {% block page_actions %}{% endblock %}
-
-            <!-- Content -->
-            {% block content %}{% endblock %}
+    
+    <div class="container-fluid">
+        <div class="row">
+            {% include "sidebar.html" %}
+            
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                {% block content %}{% endblock %}
+            </main>
         </div>
     </div>
-
+    
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- FullCalendar -->
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script>
-        // Toggle Sidebar on Mobile
-        $(document).ready(function() {
-            $('.sidebar-toggle').click(function() {
-                $('.sidebar').toggleClass('show');
-            });
-        });
-    </script>
+    <script src="{% static 'js/main.js' %}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

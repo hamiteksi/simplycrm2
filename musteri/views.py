@@ -22,7 +22,7 @@ from django.conf import settings
 from django.utils import timezone
 import json
 import requests
-import tabula
+from tabula.io import read_pdf
 import pandas as pd
 from bs4 import BeautifulSoup
 from io import BytesIO
@@ -53,6 +53,11 @@ def dashboard(request):
     recent_customers = Customer.objects.all().order_by('-created_at')[:5]
     customers = Customer.objects.all()
     
+    # Yaklaşan etkinlikler
+    upcoming_events = CalendarEvent.objects.filter(
+        start_time__gte=timezone.now()
+    ).order_by('start_time')[:5]
+    
     # Monthly statistics
     today = timezone.now()
     six_months_ago = today - timezone.timedelta(days=180)
@@ -76,17 +81,22 @@ def dashboard(request):
         'completed_tasks': completed_tasks,
         'recent_customers': recent_customers,
         'monthly_stats': monthly_stats,
-        'customers': customers
+        'customers': customers,
+        'upcoming_events': upcoming_events,
     })
 
 # Profile Views
 @login_required
-def profile(request):
-    return render(request, 'profile.html')
+def profile_view(request):
+    return render(request, 'musteri/profile.html', {
+        'user': request.user
+    })
 
 @login_required
-def settings(request):
-    return render(request, 'settings.html')
+def settings_view(request):
+    return render(request, 'musteri/settings.html', {
+        'user': request.user
+    })
 
 # Calendar View
 @login_required
@@ -430,12 +440,12 @@ def add_note_to_customer(request, pk):
 
 @login_required
 def customer_list_view(request):
-    # Filtreleme parametrelerini al
+    # Filtreleme ve sıralama parametrelerini al
     search_query = request.GET.get('search', '')
     sort_by = request.GET.get('sort', '-created_at')
     status_filter = request.GET.get('status', '')
     
-    # Base queryset
+    # Temel sorgu
     customers = Customer.objects.all()
     
     # Arama filtresi
@@ -443,9 +453,8 @@ def customer_list_view(request):
         customers = customers.filter(
             Q(first_name__icontains=search_query) |
             Q(last_name__icontains=search_query) |
-            Q(application_number__icontains=search_query) |
             Q(phone__icontains=search_query) |
-            Q(email__icontains=search_query)
+            Q(application_number__icontains=search_query)
         )
     
     # Durum filtresi
@@ -453,43 +462,13 @@ def customer_list_view(request):
         customers = customers.filter(status=status_filter)
     
     # Sıralama
-    valid_sort_fields = {
-        'name': 'first_name',
-        '-name': '-first_name',
-        'application_number': 'application_number',
-        '-application_number': '-application_number',
-        'residence_start': 'residence_permit_start_date',
-        '-residence_start': '-residence_permit_start_date',
-        'created_at': 'created_at',
-        '-created_at': '-created_at',
-    }
+    customers = customers.order_by(sort_by)
     
-    if sort_by in valid_sort_fields:
-        sort_field = valid_sort_fields[sort_by]
-        # İsme göre sıralamada soyadını da dikkate al
-        if sort_field in ['first_name', '-first_name']:
-            if sort_field.startswith('-'):
-                customers = customers.order_by('-first_name', '-last_name')
-            else:
-                customers = customers.order_by('first_name', 'last_name')
-        else:
-            customers = customers.order_by(sort_field)
-    else:
-        customers = customers.order_by('-created_at')
-    
-    # Pagination
-    paginator = Paginator(customers, 20)
-    page = request.GET.get('page')
-    
-    try:
-        customers = paginator.get_page(page)
-    except PageNotAnInteger:
-        customers = paginator.get_page(1)
-    except EmptyPage:
-        customers = paginator.get_page(paginator.num_pages)
+    # Tablo oluştur
+    table = CustomerTable(customers)
     
     context = {
-        'customers': customers,
+        'table': table,
         'search_query': search_query,
         'sort_by': sort_by,
         'status_filter': status_filter,
@@ -524,96 +503,169 @@ def upload_pdf_view(request):
 
 def process_pdf(file_path):
     print(settings.MEDIA_ROOT)
-    full_file_path = settings.MEDIA_ROOT +  file_path[6:]
-    tables = tabula.read_pdf(full_file_path, pages="1-2", lattice=True, multiple_tables=True)
-    num_tables = len(tables)
-    if num_tables > 8:
-        first_table = tables[2]
-        second_table = tables[0]
-        third_table = tables[3]
-        forth_table = tables[7]
-    else:
-        first_table = tables[0]
-        second_table = tables[2]
-    with pd.ExcelWriter(f'output3.xlsx') as writer:  
-        if num_tables > 8:
-            first_table.to_excel(writer, sheet_name='Sheet1')
-            second_table.to_excel(writer, sheet_name='Sheet1', startrow=len(first_table)+1)
-            third_table.to_excel(writer, sheet_name='Sheet1', startrow=len(first_table) + len(second_table) + 3, index=False)
-            forth_table.to_excel(writer, sheet_name='Sheet1', startrow=len(first_table) + len(second_table) + 6, index=False)
+    full_file_path = settings.MEDIA_ROOT + file_path[6:]
+
+    # Tablo koordinatlarını tanımlıyoruz
+    table_coordinates = [
+        {'top': 104.5453, 'left': 20.5866, 'height': 138.4017, 'width': 556.5831, 'page': 1},
+        {'top': 243.6911, 'left': 19.8425, 'height': 176.3505, 'width': 554.3508, 'page': 1},
+        {'top': 431.9471, 'left': 22.8189, 'height': 59.5276, 'width': 554.3508, 'page': 1},
+        {'top': 109.0099, 'left': 20.5866, 'height': 74.4095, 'width': 558.0713, 'page': 2},
+        {'top': 190.8604, 'left': 25.7953, 'height': 132.4489, 'width': 552.1185, 'page': 2},
+    ]
+
+    # PDF'den tabloları oku
+    tables = []
+    for i, coord in enumerate(table_coordinates):
+        print(f"Tablo {i+1} okunuyor...")
+        table = read_pdf(
+            full_file_path,
+            pages=coord['page'],
+            area=[coord['top'], coord['left'], coord['top'] + coord['height'], coord['left'] + coord['width']],
+            multiple_tables=False,
+            lattice=True,
+            java_options=['-Dfile.encoding=UTF8', '-Xms128m', '-Xmx512m'],
+            encoding='cp1254'
+        )
+        if table and len(table) > 0:
+            tables.append(table[0])
+            print(f"Tablo {i+1} başarıyla okundu")
+            print(table[0])
         else:
-            first_table.to_excel(writer, sheet_name='Sheet1', startrow=1, startcol=1, index=False)
-            second_table.to_excel(writer, sheet_name='Sheet1', startrow=len(first_table) + 1, index=False)
+            print(f"Tablo {i+1} okunamadı veya boş")
+
+    def parse_date(date_str):
+        if pd.isna(date_str):
+            return None
+        try:
+            print(f"Tarih ayrıştırılıyor: {date_str}")
+            date_str = str(date_str).strip()
             
-    df = pd.read_excel("output3.xlsx")
-    if num_tables > 8:
+            # Eğer tarih "/" içeriyorsa ve birden fazla tarih varsa (örn: 15.3.2017 / 13.3.2025)
+            if ' / ' in date_str:
+                # İlk tarihi al
+                date_str = date_str.split(' / ')[0]
+            
+            # Farklı tarih formatlarını kontrol et
+            if '/' in date_str:
+                parts = date_str.replace(' ', '').split('/')
+                if len(parts) == 3:
+                    day, month, year = map(int, parts)
+                    print(f"/ ile ayrıştırıldı: gün={day}, ay={month}, yıl={year}")
+            elif '.' in date_str:
+                parts = date_str.replace(' ', '').split('.')
+                if len(parts) == 3:
+                    day, month, year = map(int, parts)
+                    print(f". ile ayrıştırıldı: gün={day}, ay={month}, yıl={year}")
+            else:
+                print("Geçersiz tarih formatı")
+                return None
+            
+            # 2 haneli yıl kontrolü
+            if year < 100:
+                year += 2000 if year < 24 else 1900
+            
+            result = f"{year}-{month:02d}-{day:02d}"
+            print(f"Sonuç tarih: {result}")
+            return result
+        except Exception as e:
+            print(f"Tarih ayrıştırma hatası: {e}")
+            return None
+
+    # Veri sözlüğünü oluştur
+    data = {}
+    if len(tables) >= 3:
+        print("Veriler okunuyor...")
+        
+        # Her tablonun içeriğini yazdır
+        for i, table in enumerate(tables):
+            print(f"\nTablo {i+1} içeriği:")
+            print(table)
+            print("\nSütun isimleri:")
+            print(table.columns)
+        
         data = {
-            'soyadi': df.iloc[1, 2],
-            'adi': df.iloc[2, 2],
-            'kimlik_no': df.iloc[6, 2],
-            'uyruk' : df.iloc[0, 4],
-            'dogum' : df.iloc[7, 4],
-            'medeni' : df.iloc[6, 4],
-            'pasaport' : df.iloc[18, 4],
-            'veren_makam' : df.iloc[19, 4],
-            'pasaport_tarih' : df.iloc[19, 2],
-            'basvuru_turu' : df.iloc[12, 3],
-            'ikamet_turu' : df.iloc[14, 3],
-            'baslangic' : df.iloc[15, 3],
-            'bitis' : df.iloc[15, 6],
-            'mail' : df.iloc[23, 5],
-            'basvuru' : df.iloc[11, 6],
-            'tel' : df.iloc[21, 5],
-            # Daha fazla alanlar...
+            'application_date': parse_date(tables[0].iloc[0, 0] if len(tables) > 0 and len(tables[0]) > 0 else None),
+            'application_number': tables[0].iloc[0, 3] if len(tables) > 0 and len(tables[0]) > 0 else None,
+            'application_type': tables[0].iloc[1, 0] if len(tables) > 0 and len(tables[0]) > 0 else None,
+            'appointment_place': tables[0].iloc[1, 3] if len(tables) > 0 and len(tables[0]) > 0 else None,
+            'residence_type': tables[0].iloc[2, 0] if len(tables) > 0 and len(tables[0]) > 0 else None,
+            'residence_permit_start_date': parse_date(tables[0].iloc[3, 0] if len(tables) > 0 and len(tables[0]) > 0 else None),
+            'residence_permit_end_date': parse_date(tables[0].iloc[3, 3] if len(tables) > 0 and len(tables[0]) > 0 else None),
+            'last_name': tables[1].iloc[1, 1] if len(tables) > 1 and len(tables[1]) > 0 else None,
+            'first_name': tables[1].iloc[2, 1] if len(tables) > 1 and len(tables[1]) > 0 else None,
+            'nationality': tables[1].iloc[0, 3] if len(tables) > 1 and len(tables[1]) > 0 else None,
+            'date_of_birth': parse_date(tables[1].iloc[7, 3] if len(tables) > 1 and len(tables[1]) > 0 else None),
+            'identity_number': tables[1].iloc[6, 1] if len(tables) > 1 and len(tables[1]) > 0 else None,
+            'father_name': tables[1].iloc[4, 1] if len(tables) > 1 and len(tables[1]) > 0 else None,
+            'mother_name': tables[1].iloc[5, 1] if len(tables) > 1 and len(tables[1]) > 0 else None,
+            'gender': tables[1].iloc[5, 3] if len(tables) > 1 and len(tables[1]) > 0 else None,
+            'marital_status': tables[1].iloc[6, 3] if len(tables) > 1 and len(tables[1]) > 0 else None,
+            'passport_type': tables[2].iloc[1, 0] if len(tables) > 2 and len(tables[2]) > 0 else None,
+            'passport_number': tables[2].iloc[1, 3] if len(tables) > 2 and len(tables[2]) > 0 else None,
+            'passport_date': parse_date(tables[2].iloc[2, 0] if len(tables) > 2 and len(tables[2]) > 0 else None),
+            'issuing_authority': tables[2].iloc[2, 3] if len(tables) > 2 and len(tables[2]) > 0 else None,
+            'address': tables[3].iloc[0, 0] if len(tables) > 3 and len(tables[3]) > 0 else None,
+            'phone': tables[3].iloc[0, 3] if len(tables) > 3 and len(tables[3]) > 0 else None,
+            'email': tables[3].iloc[1, 3] if len(tables) > 3 and len(tables[3]) > 0 else None,
+            'income': tables[4].iloc[0, 0] if len(tables) > 4 and len(tables[4]) > 0 else None,
+            'income_source': tables[4].iloc[0, 3] if len(tables) > 4 and len(tables[4]) > 0 else None,
+            'job': tables[4].iloc[1, 0] if len(tables) > 4 and len(tables[4]) > 0 else None,
+            'insurance_type': tables[4].iloc[3, 0] if len(tables) > 4 and len(tables[4]) > 0 else None,
         }
-    else:
-        data = {
-            'soyadi': df.iloc[7, 2],
-            'adi': df.iloc[8, 2],
-            'kimlik_no': df.iloc[12, 2],
-            'uyruk' : df.iloc[6, 4],
-            'dogum' : df.iloc[13, 4],
-            'medeni' : df.iloc[12, 4],
-            'pasaport' : df.iloc[18, 4],
-            'veren_makam' : df.iloc[19, 4],
-            'pasaport_tarih' : df.iloc[19, 2],
-            'basvuru_turu' : df.iloc[1, 3],
-            'ikamet_turu' : df.iloc[3, 3],
-            'baslangic' : df.iloc[4, 3],
-            'bitis' : df.iloc[4, 6],
-            'mail' : df.iloc[36, 5],
-            'basvuru' : df.iloc[0, 6],
-            'telefon' : df.iloc[34, 5],
-            # Daha fazla alanlar...
-        }
-    # for key, value in data.items():
-    #     print(f"{key}: {value}")
-    # TODO: Diğer alanları da oku ve bir sözlük oluştur
+
+        print("\nOkunan veriler:")
+        for key, value in data.items():
+            print(f"{key}: {value}")
+
+    # Boş değerleri temizle
+    data = {k: v for k, v in data.items() if v is not None and str(v).strip() != ''}
+    
     create_customer(data)
+    return data
 
 
 def create_customer(data):
+    # Tarihleri datetime formatına çevir
+    from datetime import datetime
+
+    def convert_date(date_str):
+        if not date_str:
+            return None
+        try:
+            return datetime.strptime(date_str, '%Y-%m-%d').date()
+        except:
+            return None
+
     customer = Customer(
-        first_name=data.get('adi', ''),
-        last_name=data.get('soyadi', ''),
-        identity_number=data.get('kimlik_no', ''),
-        nationality=data.get('uyruk', ''),
-        # Tarihleri parse ediyoruz
-        date_of_birth=pd.to_datetime(data.get('dogum'), errors='coerce'),
-        marital_status=data.get('medeni', ''),
-        passport_number=data.get('pasaport', ''),
-        issuing_authority=data.get('veren_makam', ''),
-        # Pasaport tarihini parse ediyoruz
-        passport_date=pd.to_datetime(data.get('pasaport_tarih'), errors='coerce'),
-        application_type=data.get('basvuru_turu', ''),
-        residence_type=data.get('ikamet_turu', ''),
-        # Tarihleri parse ediyoruz
-        residence_permit_start_date=pd.to_datetime(data.get('baslangic'), errors='coerce'),
-        residence_permit_end_date=pd.to_datetime(data.get('bitis'), errors='coerce'),
-        phone_number=data.get('telefon', ''),
-        mail=data.get('mail', ''),
-        # 'basvuru' alanını nasıl işleyeceğinizi belirtmediniz, bu yüzden bu satırı yorumladım
-        application_number=data.get('basvuru', ''),
+        first_name=data.get('first_name', ''),
+        last_name=data.get('last_name', ''),
+        identity_number=data.get('identity_number', ''),
+        nationality=data.get('nationality', ''),
+        father_name=data.get('father_name', ''),
+        mother_name=data.get('mother_name', ''),
+        job=data.get('job', ''),
+        gender=data.get('gender', ''),
+        passport_type=data.get('passport_type', ''),
+        address=data.get('address', ''),
+        income=data.get('income', ''),
+        income_source=data.get('income_source', ''),
+        insurance_type=data.get('insurance_type', ''),
+        date_of_birth=convert_date(data.get('date_of_birth')),
+        marital_status=data.get('marital_status', ''),
+        passport_number=data.get('passport_number', ''),
+        issuing_authority=data.get('issuing_authority', ''),
+        passport_date=convert_date(data.get('passport_date')),
+        application_type=data.get('application_type', ''),
+        residence_type=data.get('residence_type', ''),
+        residence_permit_start_date=convert_date(data.get('residence_permit_start_date')),
+        residence_permit_end_date=convert_date(data.get('residence_permit_end_date')),
+        phone=data.get('phone', ''),
+        email=data.get('email', ''),
+        application_number=data.get('application_number', ''),
+        application_date=convert_date(data.get('application_date')),
+        appointment_place=data.get('appointment_place', ''),
+        service_type=data.get('service_type', ''),
     )
     customer.save()
 
@@ -646,6 +698,9 @@ def customer_detail_view(request, pk):
     # Tasks
     tasks = Yapilacak.objects.filter(customer=main_customer).order_by('-created_at')
     
+    # Etkinlikler
+    calendar_events = CalendarEvent.objects.filter(customer=main_customer).order_by('start_time')
+    
     context = {
         'main_customer': main_customer,
         'notes': notes,
@@ -656,6 +711,7 @@ def customer_detail_view(request, pk):
         'dokumanlar': dokumanlar,
         'payments': payments,
         'tasks': tasks,
+        'calendar_events': calendar_events,
     }
     
     return render(request, 'musteri/customer_detail.html', context)
@@ -804,7 +860,20 @@ class FormView:
 @login_required
 def calendar_view(request):
     customers = Customer.objects.all()
-    return render(request, 'musteri/calendar.html', {'customers': customers})
+    events = []
+    calendar_events = CalendarEvent.objects.all()
+    for event in calendar_events:
+        events.append({
+            'title': event.title,
+            'start': event.start_time.isoformat(),
+            'end': event.end_time.isoformat(),
+            'id': event.id,
+            'description': event.description
+        })
+    return render(request, 'musteri/calendar.html', {
+        'customers': customers,
+        'events': json.dumps(events)
+    })
 
 @login_required
 def calendar_events_view(request):
@@ -815,28 +884,10 @@ def calendar_events_view(request):
     for event in calendar_events:
         events.append({
             'title': event.title,
-            'start': event.start.isoformat(),
-            'end': event.end.isoformat() if event.end else None,
+            'start': event.start_time.isoformat(),
+            'end': event.end_time.isoformat() if event.end_time else None,
             'description': event.description,
-            'color': event.color
-        })
-    
-    # Add tasks
-    tasks = Yapilacak.objects.filter(tamamlandi=False)
-    for task in tasks:
-        events.append({
-            'title': task.yapilacak,
-            'start': task.olusturulma_tarihi.isoformat(),
-            'color': '#dc3545'
-        })
-    
-    # Add document expiry dates
-    documents = CustomerFile.objects.filter(expiry_date__isnull=False)
-    for doc in documents:
-        events.append({
-            'title': f'Document Expiry: {doc.customer.name}',
-            'start': doc.expiry_date.isoformat(),
-            'color': '#ffc107'
+            'id': event.id
         })
     
     return JsonResponse(events, safe=False)
@@ -848,24 +899,46 @@ def calendar_event_create_view(request):
         customer_id = data.get('customer_id')
         try:
             customer = Customer.objects.get(id=customer_id) if customer_id else None
+            
+            # Tarihleri datetime'a çevir
+            from datetime import datetime
+            start_time = datetime.fromisoformat(data.get('start').replace('Z', '+00:00'))
+            end_time = datetime.fromisoformat(data.get('end').replace('Z', '+00:00')) if data.get('end') else start_time
+            
             event = CalendarEvent.objects.create(
                 customer=customer,
                 title=data.get('title'),
                 description=data.get('description', ''),
-                start_time=data.get('start'),
-                end_time=data.get('end') if data.get('end') else data.get('start')
+                start_time=start_time,
+                end_time=end_time
             )
             return JsonResponse({
                 'id': event.id,
                 'title': event.title,
                 'start': event.start_time.isoformat(),
                 'end': event.end_time.isoformat(),
+                'description': event.description
             })
         except Customer.DoesNotExist:
             return JsonResponse({'error': 'Müşteri bulunamadı'}, status=404)
+        except ValueError as e:
+            return JsonResponse({'error': f'Tarih formatı hatalı: {str(e)}'}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@login_required
+def calendar_event_delete_view(request, event_id):
+    if request.method == 'POST':
+        try:
+            event = CalendarEvent.objects.get(id=event_id)
+            event.delete()
+            return JsonResponse({'status': 'success'})
+        except CalendarEvent.DoesNotExist:
+            return JsonResponse({'error': 'Etkinlik bulunamadı'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Geçersiz istek'}, status=400)
 
 # Report Views
 def reports_view(request):
@@ -899,10 +972,14 @@ def customer_documents_view(request):
 
 # Profile & Settings Views
 def profile_view(request):
-    return render(request, 'musteri/profile.html')
+    return render(request, 'musteri/profile.html', {
+        'user': request.user
+    })
 
 def settings_view(request):
-    return render(request, 'musteri/settings.html')
+    return render(request, 'musteri/settings.html', {
+        'user': request.user
+    })
 
 def notification_settings_view(request):
     return render(request, 'musteri/notification_settings.html')
@@ -958,3 +1035,50 @@ def add_payment(request, customer_id):
             messages.success(request, f'{amount}₺ tutarında ödeme başarıyla eklendi.')
         
     return redirect('musteri:customer_detail', pk=customer_id)
+
+@login_required
+def calendar_event_detail_view(request, event_id):
+    try:
+        event = CalendarEvent.objects.get(id=event_id)
+        return JsonResponse({
+            'id': event.id,
+            'title': event.title,
+            'start': event.start_time.isoformat(),
+            'end': event.end_time.isoformat() if event.end_time else None,
+            'description': event.description
+        })
+    except CalendarEvent.DoesNotExist:
+        return JsonResponse({'error': 'Etkinlik bulunamadı'}, status=404)
+
+@login_required
+def calendar_event_update_view(request, event_id):
+    if request.method == 'POST':
+        try:
+            event = CalendarEvent.objects.get(id=event_id)
+            data = request.POST
+            
+            # Tarihleri datetime'a çevir
+            from datetime import datetime
+            start_time = datetime.fromisoformat(data.get('start').replace('Z', '+00:00'))
+            end_time = datetime.fromisoformat(data.get('end').replace('Z', '+00:00')) if data.get('end') else start_time
+            
+            event.title = data.get('title')
+            event.description = data.get('description', '')
+            event.start_time = start_time
+            event.end_time = end_time
+            event.save()
+            
+            return JsonResponse({
+                'id': event.id,
+                'title': event.title,
+                'start': event.start_time.isoformat(),
+                'end': event.end_time.isoformat(),
+                'description': event.description
+            })
+        except CalendarEvent.DoesNotExist:
+            return JsonResponse({'error': 'Etkinlik bulunamadı'}, status=404)
+        except ValueError as e:
+            return JsonResponse({'error': f'Tarih formatı hatalı: {str(e)}'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Invalid request'}, status=400)
