@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Gider Sil{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Gider Silme Onayı</h5>
+            <p class="card-text">Bu gider kaydını silmek istediğinizden emin misiniz?</p>
+            <p><strong>Açıklama:</strong> {{ expense.description }}</p>
+            <p><strong>Tutar:</strong> ₺{{ expense.amount|floatformat:2 }}</p>
+            <p><strong>Tarih:</strong> {{ expense.created_at|date:"d.m.Y" }}</p>
+            
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Sil</button>
+                <a href="{% url 'musteri:expense' %}" class="btn btn-secondary">İptal</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

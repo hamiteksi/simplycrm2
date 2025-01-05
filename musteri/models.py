@@ -52,7 +52,7 @@ class Customer(models.Model):
     # Pasaport bilgileri
     passport_number = models.CharField(max_length=20, blank=True, null=True)
     issuing_authority = models.CharField(max_length=100, blank=True, null=True)
-    passport_date = models.DateField(null=True, blank=True)
+    passport_date = models.CharField(max_length=100, blank=True, null=True)
     passport_info = models.TextField(blank=True, null=True)
     passport_type = models.CharField(max_length=100, blank=True, null=True)
     
@@ -178,21 +178,21 @@ class InsuranceAgeBracket(models.Model):
 
 
 class Yapilacak(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='yapilacaklar')
-    baslik = models.CharField(max_length=200)
-    aciklama = models.TextField(blank=True, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True, blank=True)
+    yapilacak = models.CharField(max_length=200)
+    detay = models.TextField(null=True, blank=True)
     son_tarih = models.DateTimeField()
     tamamlandi = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     def __str__(self):
-        return f"{self.baslik} - {self.son_tarih.strftime('%Y-%m-%d %H:%M')}"
-    
+        return self.yapilacak
+
     class Meta:
-        verbose_name = "Yapılacak"
-        verbose_name_plural = "Yapılacaklar"
-        ordering = ['son_tarih']
+        verbose_name = 'Yapılacak'
+        verbose_name_plural = 'Yapılacaklar'
+        ordering = ['-created_at']
 
 class Payment(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='payments')

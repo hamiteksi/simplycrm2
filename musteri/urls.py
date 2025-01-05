@@ -39,6 +39,13 @@ urlpatterns = [
     path('tasks/<int:task_id>/complete/', views.complete_task, name='complete_task'),
     path('tasks/<int:id>/complete/', views.complete_yapilacak, name='complete_yapilacak'),
     
+    # Expense Management
+    path('expenses/', views.expense_list, name='expense'),
+    path('expenses/add/', views.ExpenseCreateView.as_view(), name='expense_create'),
+    path('expenses/calculate/', views.calculate_expenses, name='calculate_expenses'),
+    path('expenses/<int:pk>/edit/', views.expense_edit, name='expense_edit'),
+    path('expenses/<int:pk>/delete/', views.expense_delete, name='expense_delete'),
+    
     # User Profile & Settings
     path('profile/', views.profile_view, name='profile'),
     path('settings/', views.settings_view, name='settings'),

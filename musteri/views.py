@@ -48,41 +48,36 @@ def dashboard(request):
     total_customers = Customer.objects.count()
     active_tasks = Yapilacak.objects.filter(tamamlandi=False).count()
     
+    # Şu anki zamanı al
+    now = timezone.now()
+    
     pending_tasks = Yapilacak.objects.filter(tamamlandi=False).order_by('son_tarih')[:5]
     completed_tasks = Yapilacak.objects.filter(tamamlandi=True).order_by('-updated_at')[:5]
     recent_customers = Customer.objects.all().order_by('-created_at')[:5]
     customers = Customer.objects.all()
     
-    # Yaklaşan etkinlikler
-    upcoming_events = CalendarEvent.objects.filter(
-        start_time__gte=timezone.now()
-    ).order_by('start_time')[:5]
+    # Süresi yaklaşan müşteriler
+    expiring_customers = Customer.objects.filter(
+        residence_permit_end_date__gte=now.date()
+    ).order_by('residence_permit_end_date')[:5]
     
-    # Monthly statistics
-    today = timezone.now()
-    six_months_ago = today - timezone.timedelta(days=180)
-    monthly_stats = []
+    # İstatistikler
+    document_count = Dokuman.objects.count()
+    expense_total = ExpenseItem.objects.aggregate(total=Sum('amount'))['total'] or 0
+    recent_expenses = ExpenseItem.objects.all().order_by('-created_at')[:5]
     
-    for i in range(6):
-        month_start = today - timezone.timedelta(days=30 * i)
-        month_end = month_start - timezone.timedelta(days=30)
-        count = Customer.objects.filter(created_at__gte=month_end, created_at__lt=month_start).count()
-        monthly_stats.append({
-            'month': month_end,
-            'count': count
-        })
-    
-    monthly_stats.reverse()
-    
-    return render(request, 'dashboard.html', {
-        'total_customers': total_customers,
-        'active_tasks': active_tasks,
+    return render(request, 'musteri/dashboard.html', {
+        'customer_count': total_customers,
+        'task_count': active_tasks,
+        'document_count': document_count,
+        'expense_total': expense_total,
         'pending_tasks': pending_tasks,
         'completed_tasks': completed_tasks,
         'recent_customers': recent_customers,
-        'monthly_stats': monthly_stats,
         'customers': customers,
-        'upcoming_events': upcoming_events,
+        'recent_expenses': recent_expenses,
+        'now': now,
+        'expiring_customers': expiring_customers,
     })
 
 # Profile Views
@@ -186,40 +181,83 @@ def reports(request):
 # Task Views
 @login_required
 def yapilacak_list(request):
-    tasks = Yapilacak.objects.all().order_by('-created_at')
+    yapilacaklar = Yapilacak.objects.all().order_by('-created_at')
     customers = Customer.objects.all()
     return render(request, 'musteri/yapilacak_list.html', {
-        'tasks': tasks,
+        'yapilacaklar': yapilacaklar,
         'customers': customers
     })
 
 @login_required
+@require_POST
 def add_yapilacak(request):
-    if request.method == 'POST':
+    try:
         yapilacak = request.POST.get('yapilacak')
-        customer_id = request.POST.get('customer')
+        detay = request.POST.get('detay')
+        son_tarih = request.POST.get('son_tarih')
+        customer_id = request.POST.get('customer_id')
         
-        task = Yapilacak(yapilacak=yapilacak)
-        if customer_id:
+        # Validasyonlar
+        if not yapilacak:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Görev başlığı boş olamaz'
+            })
+        
+        # Görev oluştur
+        task = Yapilacak(
+            yapilacak=yapilacak,
+            detay=detay,
+            son_tarih=son_tarih if son_tarih else None,
+            tamamlandi=False
+        )
+        
+        # Müşteri kontrolü ve ataması
+        if customer_id and customer_id != '':
             try:
                 customer = Customer.objects.get(id=customer_id)
                 task.customer = customer
             except Customer.DoesNotExist:
-                pass
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Seçilen müşteri (ID: {customer_id}) bulunamadı'
+                })
+            except ValueError:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Geçersiz müşteri ID formatı'
+                })
+        
+        # Görevi kaydet
         task.save()
         
-        messages.success(request, 'Task added successfully.')
-        return redirect('musteri:yapilacak')
-    return redirect('musteri:yapilacak')
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Görev başarıyla eklendi'
+        })
+        
+    except ValueError as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Geçersiz veri formatı: {str(e)}'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Beklenmeyen bir hata oluştu: {str(e)}'
+        })
 
 @login_required
+@require_POST
 def complete_task(request, task_id):
-    if request.method == 'POST':
+    try:
         task = get_object_or_404(Yapilacak, id=task_id)
-        task.tamamlandi = not task.tamamlandi
+        task.tamamlandi = True
+        task.tamamlanma_tarihi = timezone.now()
         task.save()
-        return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'error'}, status=400)
+        return JsonResponse({'status': 'success', 'message': 'Görev başarıyla tamamlandı'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
 
 # Deal Views
 @login_required
@@ -244,47 +282,75 @@ def complete_yapilacak(request, id):
     if request.method == "POST":
         yapilacak = get_object_or_404(Yapilacak, id=id)
         yapilacak.tamamlandi = True
-        yapilacak.tamamlanma_tarihi = timezone.now()  # Update completion time
+        yapilacak.tamamlanma_tarihi = timezone.now()
         yapilacak.save()
-        return JsonResponse({"success": True}, status=200)
+        return JsonResponse({
+            "status": "success",
+            "message": "Görev başarıyla tamamlandı"
+        })
     else:
-        return JsonResponse({"success": False}, status=400)
+        return JsonResponse({
+            "status": "error",
+            "message": "Geçersiz istek metodu"
+        }, status=400)
 
 @csrf_exempt
 def add_yapilacak(request):
     if request.method == "POST":
-        baslik = request.POST.get("yapilacak")
-        aciklama = request.POST.get("detay")
-        customer_id = request.POST.get("customer_id")
-        son_tarih = timezone.now() + timezone.timedelta(days=7)  # Varsayılan olarak 1 hafta sonra
-        
         try:
-            customer = Customer.objects.get(id=customer_id) if customer_id else None
+            yapilacak = request.POST.get("yapilacak")
+            detay = request.POST.get("detay")
+            customer_id = request.POST.get("customer_id")
+            son_tarih = request.POST.get("son_tarih")
+            
+            if not yapilacak:
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Başlık zorunludur"
+                })
+            
+            try:
+                customer = Customer.objects.get(id=customer_id) if customer_id else None
+            except Customer.DoesNotExist:
+                return JsonResponse({
+                    "status": "error",
+                    "message": "Müşteri bulunamadı"
+                })
+            
             new_item = Yapilacak(
                 customer=customer,
-                baslik=baslik,
-                aciklama=aciklama,
-                son_tarih=son_tarih
+                yapilacak=yapilacak,
+                detay=detay,
+                son_tarih=son_tarih if son_tarih else None
             )
             new_item.save()
-            return JsonResponse({"success": True}, status=200)
-        except Customer.DoesNotExist:
-            return JsonResponse({"error": "Müşteri bulunamadı"}, status=404)
+            return JsonResponse({
+                "status": "success",
+                "message": "Görev başarıyla eklendi"
+            })
+            
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
-    else:
-        return JsonResponse({"success": False}, status=400)
+            return JsonResponse({
+                "status": "error",
+                "message": str(e)
+            })
+    
+    return JsonResponse({
+        "status": "error",
+        "message": "Geçersiz istek"
+    })
 
+@login_required
 def yapilacak_list_view(request):
-    if request.method == "POST":
-        form = YapilacakForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('yapilacak')
-    else:
-        form = YapilacakForm()
-    yapilacaklar = Yapilacak.objects.all()
-    return render(request, 'musteri/yapilacak_list.html', {'form': form, 'yapilacaklar': yapilacaklar})
+    now = timezone.now()
+    yapilacaklar = Yapilacak.objects.all().order_by('tamamlandi', 'son_tarih')
+    customers = Customer.objects.all()
+    
+    return render(request, 'musteri/yapilacak_list.html', {
+        'yapilacaklar': yapilacaklar,
+        'customers': customers,
+        'now': now
+    })
 
 class ExpenseCreateView(View):
     def get(self, request):
@@ -528,70 +594,75 @@ def process_pdf(file_path):
             encoding='cp1254'
         )
         if table and len(table) > 0:
-            tables.append(table[0])
+            df = table[0]
+            if i == 0:  # İlk tablo için özel işlem
+                # Mevcut ilk satırı bir alt satıra kaydır
+                df = pd.concat([pd.DataFrame([df.columns], columns=df.columns), df], ignore_index=True)
+                # Yeni sütun başlıklarını ekle
+                df.columns = [f"Sütun {j+1}" for j in range(len(df.columns))]
+            tables.append(df)
             print(f"Tablo {i+1} başarıyla okundu")
-            print(table[0])
+            print(df)
         else:
             print(f"Tablo {i+1} okunamadı veya boş")
 
     def parse_date(date_str):
-        if pd.isna(date_str):
+        if pd.isna(date_str) or not date_str:
             return None
-        try:
-            print(f"Tarih ayrıştırılıyor: {date_str}")
-            date_str = str(date_str).strip()
-            
-            # Eğer tarih "/" içeriyorsa ve birden fazla tarih varsa (örn: 15.3.2017 / 13.3.2025)
-            if ' / ' in date_str:
-                # İlk tarihi al
-                date_str = date_str.split(' / ')[0]
-            
-            # Farklı tarih formatlarını kontrol et
-            if '/' in date_str:
-                parts = date_str.replace(' ', '').split('/')
-                if len(parts) == 3:
-                    day, month, year = map(int, parts)
-                    print(f"/ ile ayrıştırıldı: gün={day}, ay={month}, yıl={year}")
-            elif '.' in date_str:
-                parts = date_str.replace(' ', '').split('.')
-                if len(parts) == 3:
-                    day, month, year = map(int, parts)
-                    print(f". ile ayrıştırıldı: gün={day}, ay={month}, yıl={year}")
-            else:
-                print("Geçersiz tarih formatı")
-                return None
-            
-            # 2 haneli yıl kontrolü
-            if year < 100:
-                year += 2000 if year < 24 else 1900
-            
-            result = f"{year}-{month:02d}-{day:02d}"
-            print(f"Sonuç tarih: {result}")
-            return result
-        except Exception as e:
-            print(f"Tarih ayrıştırma hatası: {e}")
+
+        # String'i temizle
+        date_str = str(date_str).strip()
+        
+        # Başlık içeren satırları kontrol et ve atla
+        skip_keywords = [
+            'Başvurusu', 'Tarihi', 'Date', 'Requested', 'Start', 'Validity',
+            'Issue', 'Düzenleme', 'Geçerlilik', 'Başlangıç', 'Purpose'
+        ]
+        
+        if any(keyword in date_str for keyword in skip_keywords):
             return None
+        
+        # Çoklu tarih kontrolü (örn: "12 / 1 / 2025")
+        if ' / ' in date_str:
+            parts = [p.strip() for p in date_str.split(' / ')]
+            if len(parts) >= 3:  # En az 3 parça varsa (gün/ay/yıl)
+                day, month, year = parts[0], parts[1], parts[2]
+                try:
+                    day = int(day)
+                    month = int(month)
+                    year = int(year)
+                    
+                    # Yıl düzeltmesi
+                    if year < 100:
+                        if year < 30:
+                            year += 2000
+                        else:
+                            year += 1900
+                    
+                    # Geçerlilik kontrolü
+                    if 1 <= month <= 12 and 1 <= day <= 31:
+                        from datetime import date
+                        try:
+                            result = date(year, month, day)
+                            return result.strftime('%Y-%m-%d')
+                        except ValueError:
+                            pass
+                except ValueError:
+                    pass
+        
+        return None
 
     # Veri sözlüğünü oluştur
     data = {}
     if len(tables) >= 3:
-        print("Veriler okunuyor...")
-        
-        # Her tablonun içeriğini yazdır
-        for i, table in enumerate(tables):
-            print(f"\nTablo {i+1} içeriği:")
-            print(table)
-            print("\nSütun isimleri:")
-            print(table.columns)
-        
         data = {
-            'application_date': parse_date(tables[0].iloc[0, 0] if len(tables) > 0 and len(tables[0]) > 0 else None),
+            'application_date': tables[0].iloc[0, 1] if len(tables) > 0 and len(tables[0]) > 0 else None,
             'application_number': tables[0].iloc[0, 3] if len(tables) > 0 and len(tables[0]) > 0 else None,
-            'application_type': tables[0].iloc[1, 0] if len(tables) > 0 and len(tables[0]) > 0 else None,
+            'application_type': tables[0].iloc[1, 1] if len(tables) > 0 and len(tables[0]) > 0 else None,
             'appointment_place': tables[0].iloc[1, 3] if len(tables) > 0 and len(tables[0]) > 0 else None,
-            'residence_type': tables[0].iloc[2, 0] if len(tables) > 0 and len(tables[0]) > 0 else None,
-            'residence_permit_start_date': parse_date(tables[0].iloc[3, 0] if len(tables) > 0 and len(tables[0]) > 0 else None),
-            'residence_permit_end_date': parse_date(tables[0].iloc[3, 3] if len(tables) > 0 and len(tables[0]) > 0 else None),
+            'residence_type': tables[0].iloc[2, 1] if len(tables) > 0 and len(tables[0]) > 0 else None,
+            'residence_permit_start_date': parse_date(tables[0].iloc[4, 1] if len(tables) > 0 and len(tables[0]) > 0 else None),
+            'residence_permit_end_date': parse_date(tables[0].iloc[4, 3] if len(tables) > 0 and len(tables[0]) > 0 else None),
             'last_name': tables[1].iloc[1, 1] if len(tables) > 1 and len(tables[1]) > 0 else None,
             'first_name': tables[1].iloc[2, 1] if len(tables) > 1 and len(tables[1]) > 0 else None,
             'nationality': tables[1].iloc[0, 3] if len(tables) > 1 and len(tables[1]) > 0 else None,
@@ -601,17 +672,17 @@ def process_pdf(file_path):
             'mother_name': tables[1].iloc[5, 1] if len(tables) > 1 and len(tables[1]) > 0 else None,
             'gender': tables[1].iloc[5, 3] if len(tables) > 1 and len(tables[1]) > 0 else None,
             'marital_status': tables[1].iloc[6, 3] if len(tables) > 1 and len(tables[1]) > 0 else None,
-            'passport_type': tables[2].iloc[1, 0] if len(tables) > 2 and len(tables[2]) > 0 else None,
+            'passport_type': tables[2].iloc[1, 1] if len(tables) > 2 and len(tables[2]) > 0 else None,
             'passport_number': tables[2].iloc[1, 3] if len(tables) > 2 and len(tables[2]) > 0 else None,
-            'passport_date': parse_date(tables[2].iloc[2, 0] if len(tables) > 2 and len(tables[2]) > 0 else None),
+            'passport_date': tables[2].iloc[2, 1] if len(tables) > 2 and len(tables[2]) > 0 else None,
             'issuing_authority': tables[2].iloc[2, 3] if len(tables) > 2 and len(tables[2]) > 0 else None,
-            'address': tables[3].iloc[0, 0] if len(tables) > 3 and len(tables[3]) > 0 else None,
+            'address': tables[3].iloc[0, 1] if len(tables) > 3 and len(tables[3]) > 0 else None,
             'phone': tables[3].iloc[0, 3] if len(tables) > 3 and len(tables[3]) > 0 else None,
             'email': tables[3].iloc[1, 3] if len(tables) > 3 and len(tables[3]) > 0 else None,
-            'income': tables[4].iloc[0, 0] if len(tables) > 4 and len(tables[4]) > 0 else None,
+            'income': tables[4].iloc[0, 1] if len(tables) > 4 and len(tables[4]) > 0 else None,
             'income_source': tables[4].iloc[0, 3] if len(tables) > 4 and len(tables[4]) > 0 else None,
-            'job': tables[4].iloc[1, 0] if len(tables) > 4 and len(tables[4]) > 0 else None,
-            'insurance_type': tables[4].iloc[3, 0] if len(tables) > 4 and len(tables[4]) > 0 else None,
+            'job': tables[4].iloc[1, 1] if len(tables) > 4 and len(tables[4]) > 0 else None,
+            'insurance_type': tables[4].iloc[3, 1] if len(tables) > 4 and len(tables[4]) > 0 else None,
         }
 
         print("\nOkunan veriler:")
@@ -655,7 +726,7 @@ def create_customer(data):
         marital_status=data.get('marital_status', ''),
         passport_number=data.get('passport_number', ''),
         issuing_authority=data.get('issuing_authority', ''),
-        passport_date=convert_date(data.get('passport_date')),
+        passport_date=data.get('passport_date'),
         application_type=data.get('application_type', ''),
         residence_type=data.get('residence_type', ''),
         residence_permit_start_date=convert_date(data.get('residence_permit_start_date')),
@@ -1082,3 +1153,35 @@ def calendar_event_update_view(request, event_id):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+@login_required
+def expense_list(request):
+    expenses = ExpenseItem.objects.all().order_by('-created_at')
+    return render(request, 'musteri/expense_list.html', {
+        'expenses': expenses
+    })
+
+@login_required
+def expense_edit(request, pk):
+    expense = get_object_or_404(ExpenseItem, pk=pk)
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST, instance=expense)
+        if form.is_valid():
+            form.save()
+            return redirect('musteri:expense')
+    else:
+        form = ExpenseForm(instance=expense)
+    return render(request, 'musteri/expense_form.html', {
+        'form': form,
+        'expense': expense
+    })
+
+@login_required
+def expense_delete(request, pk):
+    expense = get_object_or_404(ExpenseItem, pk=pk)
+    if request.method == 'POST':
+        expense.delete()
+        return redirect('musteri:expense')
+    return render(request, 'musteri/expense_confirm_delete.html', {
+        'expense': expense
+    })

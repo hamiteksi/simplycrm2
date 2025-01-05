@@ -1,6 +1,11 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock extra_css %}
 
 {% block content %}
 <div class="container mt-4">
@@ -42,64 +47,121 @@
 
     <!-- Recent Activity -->
     <div class="row g-4">
-        <!-- Recent Customers -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-white py-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Recent Customers</h5>
-                        <a href="{% url 'musteri:customer_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
-                    </div>
+        <!-- Pending Tasks -->
+        <div class="card mb-4">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Bekleyen Görevler</h5>
+                    <button id="openTaskPopup" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus"></i> Yeni Görev
+                    </button>
                 </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        {% for customer in recent_customers %}
-                        <a href="{% url 'musteri:customer_detail' customer.id %}" class="list-group-item list-group-item-action">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ customer.first_name }} {{ customer.last_name }}</h6>
-                                <small class="text-muted">ID: {{ customer.id }}</small>
-                            </div>
-                            <small class="text-muted">{{ customer.mail }}</small>
-                        </a>
-                        {% empty %}
-                        <div class="list-group-item text-center py-4">
-                            <p class="text-muted mb-0">No customers found</p>
-                        </div>
-                        {% endfor %}
-                    </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Görev</th>
+                                <th>Detay</th>
+                                <th>Müşteri</th>
+                                <th>Son Tarih</th>
+                                <th>Kalan Süre</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in pending_tasks %}
+                            <tr>
+                                <td>{{ task.yapilacak }}</td>
+                                <td>
+                                    {% if task.detay %}
+                                        <span class="text-muted">{{ task.detay }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.customer %}
+                                        {{ task.customer.first_name }} {{ task.customer.last_name }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ task.son_tarih|date:"d.m.Y H:i" }}</td>
+                                <td>
+                                    {% with time_left=task.son_tarih|timeuntil %}
+                                        {% if task.son_tarih < now %}
+                                            <span class="badge bg-danger">Gecikmiş</span>
+                                        {% else %}
+                                            <span class="badge bg-info">{{ time_left }}</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    <button onclick="completeTask({{ task.id }})" class="btn btn-sm btn-success">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <p class="text-muted mb-0">Bekleyen görev bulunmuyor</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- Pending Tasks -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-white py-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Pending Tasks</h5>
-                        <a href="{% url 'musteri:yapilacak' %}" class="btn btn-sm btn-outline-primary">View All</a>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        {% for task in pending_tasks %}
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">{{ task.yapilacak }}</h6>
-                                <small class="text-muted">{{ task.olusturulma_tarihi|timesince }} ago</small>
-                            </div>
-                            {% if task.customer %}
-                            <small class="text-primary">
-                                <i class="fas fa-user me-1"></i>{{ task.customer.first_name }} {{ task.customer.last_name }}
-                            </small>
-                            {% endif %}
-                        </div>
-                        {% empty %}
-                        <div class="list-group-item text-center py-4">
-                            <p class="text-muted mb-0">No pending tasks</p>
-                        </div>
-                        {% endfor %}
-                    </div>
+        <!-- Completed Tasks -->
+        <div class="card">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0">Tamamlanan Görevler</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Görev</th>
+                                <th>Detay</th>
+                                <th>Müşteri</th>
+                                <th>Güncelleme Tarihi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in completed_tasks %}
+                            <tr>
+                                <td>{{ task.yapilacak }}</td>
+                                <td>
+                                    {% if task.detay %}
+                                        <span class="text-muted">{{ task.detay }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if task.customer %}
+                                        {{ task.customer.first_name }} {{ task.customer.last_name }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ task.updated_at|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4">
+                                    <p class="text-muted mb-0">Tamamlanan görev bulunmuyor</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -147,10 +209,10 @@
                         {% for expense in recent_expenses %}
                         <div class="list-group-item">
                             <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1">₺{{ expense.amount|floatformat:2 }}</h6>
-                                <small class="text-muted">ID: {{ expense.id }}</small>
+                                <h6 class="mb-0">₺{{ expense.amount|floatformat:2 }}</h6>
+                                <small class="text-muted">{{ expense.created_at|date:"d.m.Y" }}</small>
                             </div>
-                            <small class="text-muted">{{ expense.name }}</small>
+                            <small class="text-muted">{{ expense.description }}</small>
                         </div>
                         {% empty %}
                         <div class="list-group-item text-center py-4">
@@ -162,5 +224,352 @@
             </div>
         </div>
     </div>
+
+    <!-- Recent Customers & Expiring Permits -->
+    <div class="row mt-4">
+        <!-- Recent Customers -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Son Eklenen Müşteriler</h5>
+                    <a href="{% url 'musteri:customer_list' %}" class="btn btn-sm btn-outline-primary">
+                        Tümünü Gör
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for customer in recent_customers %}
+                        <a href="{% url 'musteri:customer_detail' customer.pk %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ customer.first_name }} {{ customer.last_name }}</h6>
+                                    <small class="text-muted">{{ customer.created_at|date:"d.m.Y" }}</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">Yeni</span>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <div class="text-center py-3">
+                            <p class="text-muted mb-0">Henüz müşteri bulunmuyor</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expiring Permits -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Süresi Yaklaşan İkamet İzinleri</h5>
+                    <a href="{% url 'musteri:customer_expiry_list' %}" class="btn btn-sm btn-outline-primary">
+                        Tümünü Gör
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for customer in expiring_customers %}
+                        <a href="{% url 'musteri:customer_detail' customer.pk %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ customer.first_name }} {{ customer.last_name }}</h6>
+                                    <small class="text-muted">Son Tarih: {{ customer.residence_permit_end_date|date:"d.m.Y" }}</small>
+                                </div>
+                                <span class="badge {% if customer.residence_permit_end_date|timeuntil:now < '30 gün' %}bg-danger{% else %}bg-warning{% endif %} rounded-pill">
+                                    {{ customer.residence_permit_end_date|timeuntil }}
+                                </span>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <div class="text-center py-3">
+                            <p class="text-muted mb-0">Süresi yaklaşan ikamet izni bulunmuyor</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Görev Ekleme Popup -->
+<div id="taskPopup" class="custom-popup" style="display: none;">
+    <div class="popup-content">
+        <div class="popup-header">
+            <h5>Yeni Görev Ekle</h5>
+            <button type="button" class="close-popup">&times;</button>
+        </div>
+        <form id="addTaskForm">
+            {% csrf_token %}
+            <div class="popup-body">
+                <div class="form-group mb-3">
+                    <label>Görev Başlığı</label>
+                    <input type="text" class="form-control" name="yapilacak" required>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Detay</label>
+                    <textarea class="form-control" name="detay" rows="3"></textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label>Son Tarih</label>
+                    <input type="datetime-local" class="form-control" name="son_tarih">
+                </div>
+                <div class="form-group mb-3">
+                    <label>Müşteri</label>
+                    <input type="text" class="form-control" id="customerSearch" placeholder="Müşteri ara...">
+                    <select class="form-control mt-2" name="customer_id" id="customerSelect" style="display: none;">
+                        <option value="">Seçiniz...</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" data-name="{{ customer.first_name }} {{ customer.last_name }}">{{ customer.first_name }} {{ customer.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div id="customerResults" class="list-group mt-2"></div>
+                </div>
+            </div>
+            <div class="popup-footer">
+                <button type="button" class="btn btn-secondary close-popup">İptal</button>
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.custom-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-content {
+    background-color: white;
+    border-radius: 5px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.popup-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup-body {
+    padding: 1rem;
+}
+
+.popup-footer {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.close-popup {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    color: #6c757d;
+}
+
+.close-popup:hover {
+    color: #343a40;
+}
+
+#customerResults {
+    position: absolute;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1050;
+    display: none;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#customerResults .list-group-item {
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+}
+
+#customerResults .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.form-group {
+    position: relative;
+}
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Müşteri arama fonksiyonu
+    const customerSearch = document.getElementById('customerSearch');
+    const customerResults = document.getElementById('customerResults');
+    const customerSelect = document.getElementById('customerSelect');
+    let selectedCustomerId = '';
+
+    customerSearch.addEventListener('input', function() {
+        const searchText = this.value.toLowerCase();
+        customerResults.innerHTML = '';
+        
+        if (searchText.length < 1) {
+            customerResults.style.display = 'none';
+            return;
+        }
+
+        const options = customerSelect.options;
+        let results = [];
+
+        for (let i = 1; i < options.length; i++) {
+            const customerName = options[i].getAttribute('data-name').toLowerCase();
+            if (customerName.includes(searchText)) {
+                results.push({
+                    id: options[i].value,
+                    name: options[i].getAttribute('data-name')
+                });
+            }
+        }
+
+        results.forEach(customer => {
+            const item = document.createElement('a');
+            item.href = '#';
+            item.className = 'list-group-item list-group-item-action';
+            item.textContent = customer.name;
+            item.onclick = function(e) {
+                e.preventDefault();
+                customerSearch.value = customer.name;
+                selectedCustomerId = customer.id;
+                customerResults.style.display = 'none';
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'customer_id';
+                hiddenInput.value = customer.id;
+                customerSearch.parentNode.appendChild(hiddenInput);
+            };
+            customerResults.appendChild(item);
+        });
+
+        customerResults.style.display = results.length > 0 ? 'block' : 'none';
+    });
+
+    // Popup dışına tıklandığında sonuçları gizle
+    document.addEventListener('click', function(e) {
+        if (!customerSearch.contains(e.target) && !customerResults.contains(e.target)) {
+            customerResults.style.display = 'none';
+        }
+    });
+
+    // Popup kontrolü
+    const taskPopup = document.getElementById('taskPopup');
+    const openTaskPopupBtn = document.getElementById('openTaskPopup');
+    const closePopupBtns = document.querySelectorAll('.close-popup');
+    const addTaskForm = document.getElementById('addTaskForm');
+
+    if (openTaskPopupBtn) {
+        openTaskPopupBtn.addEventListener('click', () => {
+            taskPopup.style.display = 'flex';
+        });
+    }
+
+    closePopupBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            taskPopup.style.display = 'none';
+        });
+    });
+
+    // Popup dışına tıklandığında kapatma
+    taskPopup.addEventListener('click', (e) => {
+        if (e.target === taskPopup) {
+            taskPopup.style.display = 'none';
+        }
+    });
+
+    // Görev ekleme formunu gönderme
+    if (addTaskForm) {
+        addTaskForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch('/tasks/add/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success' || data.success === true) {
+                    // Form alanlarını temizle
+                    addTaskForm.reset();
+                    // Popup'ı kapat
+                    taskPopup.style.display = 'none';
+                    // Sayfayı yenile
+                    window.location.reload();
+                } else {
+                    throw new Error(data.message || 'Görev eklenirken bir hata oluştu');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Görev eklenirken bir hata oluştu: ' + error.message);
+            });
+        });
+    }
+});
+
+// Görev tamamlama fonksiyonu
+function completeTask(taskId) {
+    fetch(`/tasks/${taskId}/complete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success' || data.success === true) {
+            window.location.reload();
+        } else {
+            throw new Error(data.message || 'Görev tamamlanırken bir hata oluştu');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Görev tamamlanırken bir hata oluştu: ' + error.message);
+    });
+}
+</script>
 {% endblock %}

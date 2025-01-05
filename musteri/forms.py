@@ -35,10 +35,16 @@ class CommunicationForm(forms.ModelForm):
 class YapilacakForm(forms.ModelForm):
     class Meta:
         model = Yapilacak
-        fields = ['baslik', 'aciklama', 'son_tarih', 'tamamlandi']
+        fields = ['yapilacak', 'detay', 'son_tarih', 'customer']
         widgets = {
             'son_tarih': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'aciklama': forms.Textarea(attrs={'rows': 3}),
+            'detay': forms.Textarea(attrs={'rows': 3}),
+        }
+        labels = {
+            'yapilacak': 'Görev Başlığı',
+            'detay': 'Detay',
+            'son_tarih': 'Son Tarih',
+            'customer': 'Müşteri'
         }
 
 class CalendarEventForm(forms.ModelForm):
