@@ -1,0 +1,67 @@
+[33m4ce57697[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fixtures klasörü ve veri dosyaları eklendi
+[33m548fdb8d[m Veritabanı yedek dosyaları eklendi
+[33mc04cb395[m Veri aktarım ve superuser oluşturma scriptleri eklendi
+[33m371c5c0d[m Render için runtime ve Procfile güncellendi
+[33m069f6b38[m django-crispy-forms versiyonu 2.3'e yükseltildi
+[33m20076871[m crispy-bootstrap5 versiyonu güncellendi
+[33m71f7d2e0[m requirements.txt güncellendi: crispy-forms ve diğer bağımlılıklar eklendi
+[33m63c97f11[m Proje dosyaları yeniden düzenlendi
+[33m91d70b87[m Initial commit
+[33me9ae5110[m Cesitli hatalar giderildi
+[33m978bab46[m Status ayarlandi v4
+[33m2a90ecff[m Status ayarlandi v3
+[33m8e12da32[m Status ayarlandi v2
+[33m79da9d4c[m Status ayarlandi. Pom.xml eklendi
+[33md927cd32[m Status ayarlandi.
+[33mdfd46039[m models.py guncellendi v3
+[33m632bd812[m models.py guncellendi v2
+[33mf512f2ec[m models.py guncellendi
+[33me6b16103[m CRM duzeltmeler yapildi. Stil gelistirildi
+[33m404b5051[m Cesitli duzenlemeler yapildi v2
+[33ma77be781[m Cesitli duzenlemeler yapildi
+[33m56a873b1[m hosting allowed
+[33mcaf88e88[m Heroku'ya ikinci yükleme
+[33m329a626a[m Heroku'ya ilk yükleme
+[33m81f72418[m first commit
+[33m7e564497[m Ensure gunicorn is in requirements2
+[33mba1dbd3b[m Ensure gunicorn is in requirements2
+[33md55d497f[m Ensure gunicorn is in requirements
+[33mf2f09bd0[m Ensure gunicorn is in requirements
+[33m3112caae[m Update configuration and dependencies8
+[33m85eacde7[m Update configuration and dependencies7
+[33m9225bf59[m Update configuration and dependencies6
+[33mdeffcf82[m Update configuration and dependencies3
+[33m086ca457[m Update configuration and dependencies2
+[33ma2200a6f[m Update configuration and dependencies
+[33mba280f97[m yeni denemeler yapildi2
+[33m743455b9[m requirements.txt duzenlendi
+[33mf360dda8[m Uygulama calisma sorunlari cozuldu7
+[33mf956b234[m Uygulama calisma sorunlari cozuldu6
+[33m49574e37[m Uygulama calisma sorunlari cozuldu5
+[33m5b8a5eb4[m Uygulama calisma sorunlari cozuldu4
+[33m3b30555a[m Uygulama calisma sorunlari cozuldu3
+[33md424d49d[m Uygulama calisma sorunlari cozuldu2
+[33m496365a8[m Uygulama calisma sorunlari cozuldu
+[33m1f5033c2[m Heroku icin hazir7
+[33mc15e56e1[m Heroku icin hazir6
+[33m4ca30bf1[m Heroku icin hazir5
+[33m700e9d7b[m Heroku icin hazir4
+[33mba347f95[m Heroku icin hazir3
+[33m9c41991d[m Heroku icin hazir2
+[33maa4ffce8[m Heroku icin hazir
+[33m7f37c6de[m simplytr
+[33m53eb2e14[m boyut duzenlemesi 2
+[33m0ab5ad26[m boyut duzenlemesi
+[33m6c0f09ee[m Staticroot Eklendi 2
+[33md4ebc843[m Staticroot Eklendi
+[33mf568c619[m Python gereksiz paketler cikartildi 4
+[33m58e17857[m Python gereksiz paketler cikartildi 3
+[33m60fcf529[m Python gereksiz paketler cikartildi 2
+[33mb1ff5e56[m Python gereksiz paketler cikartildi
+[33m7007d693[m Python cakisan paketler cikartildi
+[33m7bf47fd2[m Python desteklenen surume getirildi
+[33mf50b6b2b[m Python desteklenen surume getirildi
+[33mf80d9fed[m Force Python 3.10.1 ve diger degiskenler geri getirildi
+[33m7296ae57[m # numba==0.56.4 silindi
+[33m7ca98d5b[m # llvmlite==0.39.1 silindi
+[33m923eca34[m Initial commit
